@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "bfv",
+    srcs = [
+        "client.go",
+        "model.go",
+        "page.go",
+        "widget.go",
+    ],
+    importpath = "github.com/sphrilix/bfv-miner/internal/bfv",
+    visibility = ["//:__subpackages__"],
+    deps = ["@org_golang_x_sync//errgroup"],
+)
+
+go_test(
+    name = "bfv_test",
+    srcs = [
+        "client_test.go",
+        "page_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":bfv"],
+)

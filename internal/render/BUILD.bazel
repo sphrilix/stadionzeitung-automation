@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "render",
+    srcs = ["pdf.go"],
+    importpath = "github.com/sphrilix/bfv-miner/internal/render",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/bfv",
+        "@com_github_go_pdf_fpdf//:fpdf",
+        "@org_golang_x_image//font/gofont/gobold",
+        "@org_golang_x_image//font/gofont/goregular",
+    ],
+)
+
+go_test(
+    name = "render_test",
+    srcs = ["pdf_test.go"],
+    embed = [":render"],
+    deps = ["//internal/bfv"],
+)
