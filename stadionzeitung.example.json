@@ -7,18 +7,15 @@
   "teams": [
     {
       "file": "Spielplan-H1.pdf",
-      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G",
-      "title": "Landesliga Mitte"
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G"
     },
     {
       "file": "Spielplan-H2.pdf",
-      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G",
-      "title": "Kreisliga 3 Passauer Land"
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G"
     },
     {
       "file": "Spielplan-H3.pdf",
-      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G",
-      "title": "A-Klasse 13 Hauzenberg"
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G"
     }
   ]
 }

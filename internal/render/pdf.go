@@ -29,8 +29,6 @@ const (
 	rowHeight    = 6.0
 	boxPadding   = 1.5
 	boxGap       = 8.0
-	titleHeight  = 10.0
-	titleGap     = 4.0
 
 	fontFamily   = "Text"
 	teamFontSize = 10.0
@@ -45,11 +43,10 @@ type Fonts struct {
 	Regular, Bold []byte
 }
 
-// Render writes a single-page PDF headed "Aktuelle Spieltage in der <league>"
-// with one boxed table per matchday. The page is exactly as large as its
-// content.
-func Render(w io.Writer, league string, days []bfv.Matchday, fonts Fonts) error {
-	height := 2*edge + titleHeight + titleGap
+// Render writes a single-page PDF with one boxed table per matchday. The page
+// is exactly as large as its content; the heading belongs to the layout.
+func Render(w io.Writer, days []bfv.Matchday, fonts Fonts) error {
+	height := 2 * edge
 	for i, day := range days {
 		if i > 0 {
 			height += boxGap
@@ -70,12 +67,8 @@ func Render(w io.Writer, league string, days []bfv.Matchday, fonts Fonts) error 
 	}
 	pdf.AddPage()
 
-	pdf.SetFont(fontFamily, "B", 14)
-	pdf.SetXY(edge, edge)
-	pdf.CellFormat(boxWidth, titleHeight, "Aktuelle Spieltage in der "+league, "", 0, "C", false, 0, "")
-
 	fontSize := fitFontSize(pdf, days)
-	y := edge + titleHeight + titleGap
+	y := edge
 	for _, day := range days {
 		drawMatchday(pdf, edge, y, fontSize, day)
 		y += boxHeight(day) + boxGap

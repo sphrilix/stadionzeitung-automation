@@ -3,11 +3,12 @@
 [![CI](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml)
 
 Writes a PDF with the previous, current and next matchday ("Spieltag") of any
-BFV league, including results. The current matchday is the one running today
+BFV league, including results, as boxed tables without a heading (the layout
+it is placed into provides that). The current matchday is the one running today
 (through its last scheduled day) or, between matchdays, the next one.
 
 ```sh
-bfv-miner -title "Landesliga Mitte" -o ll.pdf \
+bfv-miner -o ll.pdf \
   https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
 ```
 
@@ -16,7 +17,6 @@ the bare id. Flags:
 
 - `-o` output file (default `<league>-spieltag-<N>.pdf`)
 - `-matchday N` centre the window on matchday N instead of the current one
-- `-title` heading name (BFV's own names are short, e.g. `KL-Gr2 SW`)
 - `-version` print the version
 
 ## Installation
@@ -44,9 +44,10 @@ The Stadionzeitung places `SZ/Dateien/Spielplan-H1.pdf`, `-H2.pdf` and
 bfv-miner -config stadionzeitung.json
 ```
 
-See `stadionzeitung.example.json`: `outDir` is the linked folder, `fonts`
-points at Calibri (any TrueType font works; without it the Go font is used),
-and each team maps a file name to its bfv.de league. Relative paths are
+See `stadionzeitung.example.json`: `outDir` is the linked folder (replace
+`<user>` with your Windows user), `fonts` points at Calibri (any TrueType
+font works; without it the Go font is used), and each team maps a file name
+to its bfv.de league. Relative paths are
 resolved against the config file. Each PDF's page is cropped to its content
 and replaced atomically, so InDesign never links a half-written file.
 
