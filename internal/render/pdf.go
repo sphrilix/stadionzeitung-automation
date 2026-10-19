@@ -1,4 +1,5 @@
-// Package render lays out league matchdays as a printable PDF.
+// Package render lays out league matchdays as a PDF meant to be placed into a
+// layout (e.g. an InDesign frame): the page is cropped to the content.
 package render
 
 import (
@@ -13,9 +14,11 @@ import (
 	"github.com/sphrilix/bfv-miner/internal/bfv"
 )
 
-// Page geometry in millimetres (A4 portrait). Columns of a matchday box:
+// Geometry in millimetres. Columns of a matchday box:
 // date | home team (right-aligned) | "-" | guest team | result.
 const (
+	// edge keeps the box borders from being clipped at the page boundary.
+	edge      = 0.5
 	boxWidth  = 160.0
 	colDate   = 20.0
 	colDash   = 6.0
@@ -26,42 +29,56 @@ const (
 	rowHeight    = 6.0
 	boxPadding   = 1.5
 	boxGap       = 8.0
+	titleHeight  = 10.0
+	titleGap     = 4.0
 
-	fontFamily   = "Go"
+	fontFamily   = "Text"
 	teamFontSize = 10.0
 	minFontSize  = 6.0
 )
 
 var reScore = regexp.MustCompile(`^\s*(\d+)\s*:\s*(\d+)\s*$`)
 
-// Render writes a PDF headed "Aktuelle Spieltage in der <league>" with one
-// boxed table per matchday.
-func Render(w io.Writer, league string, days []bfv.Matchday) error {
-	pdf := fpdf.New("P", "mm", "A4", "")
-	pdf.AddUTF8FontFromBytes(fontFamily, "", goregular.TTF)
-	pdf.AddUTF8FontFromBytes(fontFamily, "B", gobold.TTF)
+// Fonts are TrueType files for regular and bold text. A nil font falls back
+// to the embedded Go font.
+type Fonts struct {
+	Regular, Bold []byte
+}
+
+// Render writes a single-page PDF headed "Aktuelle Spieltage in der <league>"
+// with one boxed table per matchday. The page is exactly as large as its
+// content.
+func Render(w io.Writer, league string, days []bfv.Matchday, fonts Fonts) error {
+	height := 2*edge + titleHeight + titleGap
+	for i, day := range days {
+		if i > 0 {
+			height += boxGap
+		}
+		height += boxHeight(day)
+	}
+
+	pdf := fpdf.NewCustom(&fpdf.InitType{
+		UnitStr: "mm",
+		Size:    fpdf.SizeType{Wd: boxWidth + 2*edge, Ht: height},
+	})
+	pdf.SetMargins(0, 0, 0)
 	pdf.SetAutoPageBreak(false, 0)
+	pdf.AddUTF8FontFromBytes(fontFamily, "", orDefault(fonts.Regular, goregular.TTF))
+	pdf.AddUTF8FontFromBytes(fontFamily, "B", orDefault(fonts.Bold, gobold.TTF))
+	if err := pdf.Error(); err != nil {
+		return fmt.Errorf("loading fonts: %w", err)
+	}
 	pdf.AddPage()
 
-	pageW, pageH := pdf.GetPageSize()
-	_, top, _, _ := pdf.GetMargins()
-	left := (pageW - boxWidth) / 2
-
 	pdf.SetFont(fontFamily, "B", 14)
-	pdf.SetXY(left, top)
-	pdf.CellFormat(boxWidth, 10, "Aktuelle Spieltage in der "+league, "", 1, "C", false, 0, "")
-	pdf.SetY(pdf.GetY() + 4)
+	pdf.SetXY(edge, edge)
+	pdf.CellFormat(boxWidth, titleHeight, "Aktuelle Spieltage in der "+league, "", 0, "C", false, 0, "")
 
 	fontSize := fitFontSize(pdf, days)
+	y := edge + titleHeight + titleGap
 	for _, day := range days {
-		height := headerHeight + float64(len(day.Matches))*rowHeight + 2*boxPadding
-		if pdf.GetY()+height > pageH-top {
-			pdf.AddPage()
-			pdf.SetY(top)
-		}
-		y := pdf.GetY()
-		drawMatchday(pdf, left, y, fontSize, day)
-		pdf.SetY(y + height + boxGap)
+		drawMatchday(pdf, edge, y, fontSize, day)
+		y += boxHeight(day) + boxGap
 	}
 
 	if err := pdf.Error(); err != nil {
@@ -70,10 +87,20 @@ func Render(w io.Writer, league string, days []bfv.Matchday) error {
 	return pdf.Output(w)
 }
 
+func orDefault(font, fallback []byte) []byte {
+	if font == nil {
+		return fallback
+	}
+	return font
+}
+
+func boxHeight(day bfv.Matchday) float64 {
+	return headerHeight + float64(len(day.Matches))*rowHeight + 2*boxPadding
+}
+
 func drawMatchday(pdf *fpdf.Fpdf, x, y, fontSize float64, day bfv.Matchday) {
-	height := headerHeight + float64(len(day.Matches))*rowHeight + 2*boxPadding
 	pdf.SetLineWidth(0.3)
-	pdf.Rect(x, y, boxWidth, height, "D")
+	pdf.Rect(x, y, boxWidth, boxHeight(day), "D")
 	pdf.Line(x, y+headerHeight, x+boxWidth, y+headerHeight)
 
 	pdf.SetFont(fontFamily, "B", 12)
