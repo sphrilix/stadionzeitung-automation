@@ -14,7 +14,7 @@ func TestLoadConfigResolvesRelativePaths(t *testing.T) {
 	err := os.WriteFile(path, []byte(`{
 		"outDir": "Dateien",
 		"fonts": {"regular": "fonts/calibri.ttf", "bold": "/abs/calibrib.ttf"},
-		"teams": [{"file": "Spielplan-H1.pdf", "league": "0307PL23RO000007VS5489BUVT69HBT7-G", "title": "Landesliga Mitte"}]
+		"teams": [{"file": "Spielplan-H1.pdf", "league": "0307PL23RO000007VS5489BUVT69HBT7-G"}]
 	}`), 0o644)
 	if err != nil {
 		t.Fatal(err)

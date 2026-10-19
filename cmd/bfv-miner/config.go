@@ -29,8 +29,6 @@ type team struct {
 	File string `json:"file"`
 	// League is a bfv.de league URL or competition id.
 	League string `json:"league"`
-	// Title is the league name for the heading; empty means BFV's name.
-	Title string `json:"title"`
 }
 
 func loadConfig(path string) (config, error) {

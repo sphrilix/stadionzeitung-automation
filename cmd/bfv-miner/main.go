@@ -1,13 +1,12 @@
 // Command bfv-miner writes PDFs with the previous, current and next matchday
 // of BFV leagues.
 //
-//	bfv-miner [-o out.pdf] [-matchday N] [-title NAME] <bfv.de league URL | competition id>
+//	bfv-miner [-o out.pdf] [-matchday N] <bfv.de league URL | competition id>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -37,7 +36,6 @@ func main() {
 	configPath := flag.String("config", "", "write every PDF listed in this JSON config instead of a single league")
 	out := flag.String("o", "", "output PDF (default: <league>-spieltag-<N>.pdf)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
-	title := flag.String("title", "", `league name for the heading (default: BFV's name, e.g. "KL-Gr2 SW")`)
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0])
@@ -51,13 +49,13 @@ func main() {
 
 	var err error
 	switch {
-	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0 || *title != ""):
-		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o, -matchday or -title")
+	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0):
+		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o or -matchday")
 		os.Exit(2)
 	case *configPath != "":
 		err = runConfig(fromWorkingDir(*configPath))
 	case flag.NArg() == 1:
-		err = runSingle(flag.Arg(0), *out, *matchday, *title)
+		err = runSingle(flag.Arg(0), *out, *matchday)
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -68,7 +66,7 @@ func main() {
 	}
 }
 
-func runSingle(league, out string, matchday int, title string) error {
+func runSingle(league, out string, matchday int) error {
 	compoundID, urlDay, err := parseLeague(league)
 	if err != nil {
 		return err
@@ -80,13 +78,10 @@ func runSingle(league, out string, matchday int, title string) error {
 	if err != nil {
 		return err
 	}
-	if title == "" {
-		title = w.League
-	}
 	if out == "" {
-		out = fmt.Sprintf("%s-spieltag-%d.pdf", strings.Trim(reUnsafe.ReplaceAllString(title, "-"), "-"), w.Current)
+		out = fmt.Sprintf("%s-spieltag-%d.pdf", strings.Trim(reUnsafe.ReplaceAllString(w.League, "-"), "-"), w.Current)
 	}
-	return write(fromWorkingDir(out), title, w, render.Fonts{})
+	return write(fromWorkingDir(out), w, render.Fonts{})
 }
 
 // runConfig writes every configured PDF. A failing team does not stop the
@@ -118,7 +113,7 @@ func runTeam(outDir string, t team, fonts render.Fonts) error {
 	if err != nil {
 		return err
 	}
-	return write(filepath.Join(outDir, t.File), cmp.Or(t.Title, w.League), w, fonts)
+	return write(filepath.Join(outDir, t.File), w, fonts)
 }
 
 func fetch(compoundID string, matchday int) (bfv.Window, error) {
@@ -127,9 +122,9 @@ func fetch(compoundID string, matchday int) (bfv.Window, error) {
 	return bfv.NewClient().FetchWindow(ctx, compoundID, matchday)
 }
 
-func write(path, title string, w bfv.Window, fonts render.Fonts) error {
+func write(path string, w bfv.Window, fonts render.Fonts) error {
 	err := writeFileAtomic(path, func(out io.Writer) error {
-		return render.Render(out, title, w.Days, fonts)
+		return render.Render(out, w.Days, fonts)
 	})
 	if err != nil {
 		return err

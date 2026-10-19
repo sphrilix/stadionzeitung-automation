@@ -22,15 +22,15 @@ func TestRender(t *testing.T) {
 		}},
 	}
 	var buf bytes.Buffer
-	if err := Render(&buf, "Landesliga Mitte", days, Fonts{}); err != nil {
+	if err := Render(&buf, days, Fonts{}); err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.HasPrefix(buf.Bytes(), []byte("%PDF-")) || buf.Len() < 1000 {
 		t.Errorf("output does not look like a PDF (%d bytes)", buf.Len())
 	}
-	// The page is cropped to the content: 2 boxes with 2 and 1 rows below the
-	// title, in points (mm * 72/25.4).
-	wantH := (2*edge + titleHeight + titleGap + boxHeight(days[0]) + boxGap + boxHeight(days[1])) * 72 / 25.4
+	// The page is cropped to the content: 2 boxes with 2 and 1 rows, in
+	// points (mm * 72/25.4).
+	wantH := (2*edge + boxHeight(days[0]) + boxGap + boxHeight(days[1])) * 72 / 25.4
 	wantBox := fmt.Sprintf("/MediaBox [0 0 %.2f %.2f]", (boxWidth+2*edge)*72/25.4, wantH)
 	if !bytes.Contains(buf.Bytes(), []byte(wantBox)) {
 		t.Errorf("PDF has no %q", wantBox)
@@ -38,7 +38,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRenderRejectsInvalidFont(t *testing.T) {
-	err := Render(io.Discard, "Liga", nil, Fonts{Regular: []byte("not a font"), Bold: []byte("not a font")})
+	err := Render(io.Discard, nil, Fonts{Regular: []byte("not a font"), Bold: []byte("not a font")})
 	if err == nil {
 		t.Error("expected an error for an invalid font")
 	}
