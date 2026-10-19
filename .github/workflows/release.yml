@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux_amd64, linux_arm64, darwin_amd64, darwin_arm64, windows_amd64]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git describe needs the tag
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-${{ matrix.platform }}
+          repository-cache: true
+      - name: Build
+        run: bazel build --config=release --platforms=@rules_go//go/toolchain:${{ matrix.platform }} //cmd/bfv-miner
+      - name: Package
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          bin=$(bazel cquery --config=release --platforms=@rules_go//go/toolchain:$PLATFORM --output=files //cmd/bfv-miner)
+          name=bfv-miner_${GITHUB_REF_NAME}_${PLATFORM}
+          mkdir -p "$name" dist
+          cp "$bin" "$name/"
+          cp README.md stadionzeitung.example.json "$name/"
+          if [[ $PLATFORM == windows_* ]]; then
+            zip -r "dist/$name.zip" "$name"
+          else
+            tar -czf "dist/$name.tar.gz" "$name"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes *

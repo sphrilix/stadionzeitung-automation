@@ -18,6 +18,7 @@ go_binary(
     name = "bfv-miner",
     embed = [":bfv-miner_lib"],
     visibility = ["//visibility:public"],
+    x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_test(

@@ -1,0 +1,5 @@
+build --incompatible_strict_action_env
+test --test_output=errors
+
+# Optimised, version-stamped binaries for releases.
+build:release -c opt --strip=always --stamp --workspace_status_command=tools/workspace_status.sh
