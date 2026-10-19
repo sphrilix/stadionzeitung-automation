@@ -21,16 +21,15 @@ the bare id. Flags:
 
 ## Installation
 
-Download the archive for your system from the
+Download `bfv-miner_<version>_windows_amd64.zip` from the
 [latest release](https://github.com/sphrilix/bfv-miner/releases/latest) and
-unpack it. Each archive holds the binary, this README and
-`stadionzeitung.example.json`; `checksums.txt` lists their SHA-256 sums.
+unpack it. The archive holds `bfv-miner.exe`, this README and
+`stadionzeitung.example.json`; `checksums.txt` lists the SHA-256 sums.
 
-| System | Archive |
-| --- | --- |
-| Windows | `bfv-miner_<version>_windows_amd64.zip` |
-| macOS (Apple silicon / Intel) | `bfv-miner_<version>_darwin_arm64.tar.gz` / `_darwin_amd64.tar.gz` |
-| Linux (x86-64 / ARM64) | `bfv-miner_<version>_linux_amd64.tar.gz` / `_linux_arm64.tar.gz` |
+Releases contain only the Windows build by default. Linux and macOS archives
+(`_linux_amd64`, `_linux_arm64`, `_darwin_amd64`, `_darwin_arm64`, as
+`.tar.gz`) are added on request, see [Releasing](#releasing), or build from
+source.
 
 The binaries are not signed. On Windows, SmartScreen may warn on the first
 start (*More info → Run anyway*); on macOS, clear the quarantine flag with
@@ -94,8 +93,14 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The release workflow builds optimised binaries for Linux, macOS and Windows
-(amd64 and arm64; Windows amd64 only) with `--config=release`, which stamps
-the tag into `-version`, and publishes them with `checksums.txt` as a GitHub
-Release with generated notes. Locally, `bazel build --config=release` stamps
+The release workflow builds the optimised Windows binary with
+`--config=release`, which stamps the tag into `-version`, and publishes it
+with `checksums.txt` as a GitHub Release with generated notes.
+
+To add other platforms to an existing release, run the workflow by hand
+(*Actions → Release → Run workflow*, or
+`gh workflow run release.yml -f tag=v0.1.0 -f platforms="linux_amd64 darwin_arm64"`).
+Supported: `windows_amd64`, `linux_amd64`, `linux_arm64`, `darwin_amd64`,
+`darwin_arm64`. The archives are added to the release and `checksums.txt` is
+regenerated for all of them. Locally, `bazel build --config=release` stamps
 `git describe`; plain builds report `dev`.

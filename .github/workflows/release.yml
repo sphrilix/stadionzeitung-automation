@@ -1,21 +1,53 @@
 name: Release
 
+# A pushed v* tag releases the Windows binary only. To add other platforms to
+# a release, run this workflow manually with the tag and the platforms.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build, e.g. v0.1.0
+        required: true
+      platforms:
+        description: "Space-separated: windows_amd64 linux_amd64 linux_arm64 darwin_amd64 darwin_arm64"
+        default: windows_amd64
 
 permissions:
   contents: write
 
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
+  platforms:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - id: list
+        env:
+          PLATFORMS: ${{ inputs.platforms || 'windows_amd64' }}
+        run: |
+          for p in $PLATFORMS; do
+            case $p in
+              windows_amd64|linux_amd64|linux_arm64|darwin_amd64|darwin_arm64) ;;
+              *) echo "::error::unsupported platform $p"; exit 1 ;;
+            esac
+          done
+          echo "matrix=$(jq -cn --arg p "$PLATFORMS" '$p | split(" ") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: platforms
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [linux_amd64, linux_arm64, darwin_amd64, darwin_arm64, windows_amd64]
+        platform: ${{ fromJSON(needs.platforms.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.TAG }}
           fetch-depth: 0 # git describe needs the tag
       - uses: bazel-contrib/setup-bazel@0.15.0
         with:
@@ -29,7 +61,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           bin=$(bazel cquery --config=release --platforms=@rules_go//go/toolchain:$PLATFORM --output=files //cmd/bfv-miner)
-          name=bfv-miner_${GITHUB_REF_NAME}_${PLATFORM}
+          name=bfv-miner_${TAG}_${PLATFORM}
           mkdir -p "$name" dist
           cp "$bin" "$name/"
           cp README.md stadionzeitung.example.json "$name/"
@@ -54,7 +86,15 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          cd dist
-          sha256sum * > checksums.txt
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes *
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" --clobber dist/*
+          else
+            gh release create "$TAG" --generate-notes dist/*
+          fi
+          # Checksums cover every archive of the release, not just this run's.
+          mkdir all
+          gh release download "$TAG" --pattern 'bfv-miner_*' --dir all
+          (cd all && sha256sum *) > checksums.txt
+          gh release upload "$TAG" --clobber checksums.txt
