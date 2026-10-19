@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -26,6 +27,8 @@ type Client struct {
 	HTTP       *http.Client
 	BaseWeb    string
 	BaseWidget string
+	// Now returns the current time; nil means time.Now.
+	Now func() time.Time
 }
 
 // NewClient returns a Client for the production BFV endpoints.
@@ -59,14 +62,23 @@ type Window struct {
 	Days []Matchday
 }
 
-// FetchWindow loads the matchdays around the current one. A positive current
-// overrides BFV's notion of the current matchday.
+// FetchWindow loads the matchdays around the current one: the matchday
+// running today or, between matchdays, the next one. A positive current
+// overrides that choice.
 func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int) (Window, error) {
 	first, err := c.FetchPage(ctx, compoundID, current)
 	if err != nil {
 		return Window{}, err
 	}
-	current = first.Matchday
+	if current <= 0 {
+		now := time.Now
+		if c.Now != nil {
+			now = c.Now
+		}
+		current = first.RunningOrNext(now())
+	} else {
+		current = first.Matchday
+	}
 
 	var numbers []int
 	for n := current - 1; n <= current+1; n++ {
@@ -85,7 +97,7 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 
 	pages := make([]PageInfo, len(numbers))
 	for i, n := range numbers {
-		if n == current {
+		if n == first.Matchday {
 			pages[i] = first
 			continue
 		}

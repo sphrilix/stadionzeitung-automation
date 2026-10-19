@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // PageInfo is the matchday structure extracted from a bfv.de competition page.
@@ -17,10 +18,30 @@ import (
 type PageInfo struct {
 	LeagueName string
 	// Matchday is the matchday the page shows; for the default page this is
-	// BFV's current matchday.
+	// BFV's current matchday, i.e. the last one played.
 	Matchday    int
 	MaxMatchday int
-	MatchIDs    []string
+	// Ends maps each matchday to its scheduled last day (midnight, Berlin).
+	Ends     map[int]time.Time
+	MatchIDs []string
+}
+
+// RunningOrNext returns the matchday in progress at now or, between
+// matchdays, the next one. A matchday counts as running through its last
+// scheduled day; after the season it returns the final matchday. Without
+// schedule data it falls back to the matchday shown on the page.
+func (p PageInfo) RunningOrNext(now time.Time) int {
+	if len(p.Ends) == 0 {
+		return p.Matchday
+	}
+	y, m, d := now.In(berlin).Date()
+	today := time.Date(y, m, d, 0, 0, 0, 0, berlin)
+	for n := 1; n <= p.MaxMatchday; n++ {
+		if end, ok := p.Ends[n]; ok && !end.Before(today) {
+			return n
+		}
+	}
+	return p.MaxMatchday
 }
 
 // The page embeds its data as escaped JSON inside Next.js flight scripts,
@@ -28,7 +49,8 @@ type PageInfo struct {
 var (
 	reTitle    = regexp.MustCompile(`<title>([^|<]+)`)
 	reMatchday = regexp.MustCompile(`\\"matchDay\\":\\"(\d+)\\"`)
-	reDayNum   = regexp.MustCompile(`\{\\"number\\":(\d+),\\"period\\"`)
+	reDayNum   = regexp.MustCompile(`\{\\"number\\":(\d+),\\"period\\":\[([^\]]*)\]`)
+	reDate     = regexp.MustCompile(`\d{2}\.\d{2}\.\d{4}`)
 	reMatchID  = regexp.MustCompile(`\{\\"id\\":\\"([0-9A-Z]{32})\\",\\"status\\"`)
 )
 
@@ -42,9 +64,15 @@ func parsePage(html []byte) (PageInfo, error) {
 		return p, errors.New("no matchday found on page (not a league competition?)")
 	}
 	p.Matchday, _ = strconv.Atoi(string(m[1]))
+	p.Ends = map[int]time.Time{}
 	for _, m := range reDayNum.FindAllSubmatch(html, -1) {
-		if n, _ := strconv.Atoi(string(m[1])); n > p.MaxMatchday {
-			p.MaxMatchday = n
+		n, _ := strconv.Atoi(string(m[1]))
+		p.MaxMatchday = max(p.MaxMatchday, n)
+		// A period is ["17.07.","19.07.2026"]; only the last date has a year.
+		if dates := reDate.FindAll(m[2], -1); len(dates) > 0 {
+			if end, err := time.ParseInLocation("02.01.2006", string(dates[len(dates)-1]), berlin); err == nil {
+				p.Ends[n] = end
+			}
 		}
 	}
 	if p.MaxMatchday < p.Matchday {
