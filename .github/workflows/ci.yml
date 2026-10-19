@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: Test
+        run: bazel test //...
+      - name: Generated files are up to date
+        run: |
+          bazel run @rules_go//go -- mod tidy
+          bazel run //:gazelle
+          git diff --exit-code || { echo "::error::run 'bazel run @rules_go//go -- mod tidy' and 'bazel run //:gazelle', then commit the result"; exit 1; }
+      - name: Windows build
+        run: bazel build --platforms=@rules_go//go/toolchain:windows_amd64 //cmd/bfv-miner

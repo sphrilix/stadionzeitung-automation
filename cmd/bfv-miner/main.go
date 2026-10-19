@@ -3,6 +3,7 @@
 //
 //	bfv-miner [-o out.pdf] [-matchday N] [-title NAME] <bfv.de league URL | competition id>
 //	bfv-miner -config stadionzeitung.json
+//	bfv-miner -version
 package main
 
 import (
@@ -29,16 +30,24 @@ var (
 	reUnsafe     = regexp.MustCompile(`[^\pL\pN]+`)
 )
 
+// version is set by release builds (bazel build --config=release).
+var version = "dev"
+
 func main() {
 	configPath := flag.String("config", "", "write every PDF listed in this JSON config instead of a single league")
 	out := flag.String("o", "", "output PDF (default: <league>-spieltag-<N>.pdf)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
 	title := flag.String("title", "", `league name for the heading (default: BFV's name, e.g. "KL-Gr2 SW")`)
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage: %s [flags] <bfv.de league URL | competition id>\n       %s -config <file.json>\n", os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+	if *showVersion {
+		fmt.Println("bfv-miner", version)
+		return
+	}
 
 	var err error
 	switch {
