@@ -122,3 +122,19 @@ func TestValidateScorers(t *testing.T) {
 		t.Error("expected an error for torjaeger without team")
 	}
 }
+
+func TestValidateYouth(t *testing.T) {
+	const club = "https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I"
+	if err := (team{Kind: kindYouthDone, Club: club}).validate(); err != nil {
+		t.Errorf("jugend-ergebnisse with club: %v", err)
+	}
+	if err := (team{Kind: kindYouthNext, Team: "016PE85GAS000000VV0AG811VTE5EA5R"}).validate(); err == nil {
+		t.Error("expected an error for jugend-vorschau without club")
+	}
+	if err := (team{Kind: kindYouthNext, Club: club, Days: -1}).validate(); err == nil {
+		t.Error("expected an error for negative days")
+	}
+	if id, err := parseID(club); err != nil || id != "00ES8GNI7C00000KVV0AG08LVUPGND5I" {
+		t.Errorf("parseID(club URL) = %q, %v", id, err)
+	}
+}

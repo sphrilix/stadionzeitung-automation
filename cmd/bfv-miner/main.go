@@ -1,8 +1,10 @@
-// Command bfv-miner writes PDFs with BFV league data: the previous, current
-// and next matchday, the table, or a team's season fixtures or top scorers.
+// Command bfv-miner writes PDFs with BFV data: a league's previous, current
+// and next matchday or its table, a team's season fixtures or top scorers,
+// or a club's recent and upcoming youth matches.
 //
 //	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
 //	bfv-miner [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
+//	bfv-miner [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
@@ -27,7 +29,7 @@ import (
 
 var (
 	reCompoundID = regexp.MustCompile(`[0-9A-Z]{32}-G`)
-	reTeamID     = regexp.MustCompile(`(?:^|/)([0-9A-Z]{32})(?:$|[/?#])`)
+	reID         = regexp.MustCompile(`(?:^|/)([0-9A-Z]{32})(?:$|[/?#])`)
 	reURLDay     = regexp.MustCompile(`/spieltag/(\d+)`)
 	reUnsafe     = regexp.MustCompile(`[^\pL\pN]+`)
 )
@@ -40,9 +42,10 @@ func main() {
 	out := flag.String("o", "", "output PDF (default: named after the league and kind)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
 	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
+	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -53,13 +56,13 @@ func main() {
 
 	var err error
 	switch {
-	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0 || *kind != kindMatchdays):
-		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o, -matchday or -kind")
+	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0 || *kind != kindMatchdays || *days != 0):
+		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o, -matchday, -kind or -days")
 		os.Exit(2)
 	case *configPath != "":
 		err = runConfig(fromWorkingDir(*configPath))
 	case flag.NArg() == 1:
-		err = runSingle(flag.Arg(0), *out, *kind, *matchday)
+		err = runSingle(flag.Arg(0), *out, *kind, *matchday, *days)
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -70,10 +73,13 @@ func main() {
 	}
 }
 
-func runSingle(arg, out, kind string, matchday int) error {
+func runSingle(arg, out, kind string, matchday, days int) error {
 	t := team{Kind: kind, League: arg, matchday: matchday}
-	if slices.Contains(teamKinds, kind) {
+	switch {
+	case slices.Contains(teamKinds, kind):
 		t = team{Kind: kind, Team: arg}
+	case slices.Contains(clubKinds, kind):
+		t = team{Kind: kind, Club: arg, Days: days}
 	}
 	if err := t.validate(); err != nil {
 		return err
@@ -132,6 +138,8 @@ func build(t team, c *bfv.Client) (output, error) {
 		return buildSeason(ctx, c, t)
 	case kindScorers:
 		return buildScorers(ctx, c, t)
+	case kindYouthDone, kindYouthNext:
+		return buildYouth(ctx, c, t)
 	default:
 		return buildMatchdays(ctx, c, t)
 	}
@@ -235,6 +243,45 @@ func buildScorers(ctx context.Context, c *bfv.Client, t team) (output, error) {
 	}, nil
 }
 
+func buildYouth(ctx context.Context, c *bfv.Client, t team) (output, error) {
+	clubID, err := parseID(t.Club)
+	if err != nil {
+		return output{}, err
+	}
+	days := t.Days
+	if days == 0 {
+		days = defaultDays
+	}
+	// Results: the last days up to now; preview: from now through the
+	// coming days.
+	now := time.Now()
+	y, m, d := now.Date()
+	today := time.Date(y, m, d, 0, 0, 0, 0, now.Location())
+	from, to := today.AddDate(0, 0, -days), now
+	label := "Jugend-Ergebnisse"
+	if t.Kind == kindYouthNext {
+		from, to = now, today.AddDate(0, 0, days+1)
+		label = "Jugend-Vorschau"
+	}
+	all, err := c.FetchClubMatches(ctx, clubID, from, to)
+	if err != nil {
+		return output{}, err
+	}
+	var youth []bfv.ClubMatch
+	for _, m := range all {
+		if m.IsYouth() {
+			youth = append(youth, m)
+		}
+	}
+	return output{
+		label: fmt.Sprintf("%s, %d Spiele", label, len(youth)),
+		name:  strings.ToLower(label),
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.RenderClubMatches(out, youth, t.Kind == kindYouthDone, fonts)
+		},
+	}, nil
+}
+
 func write(path string, o output, fonts render.Fonts) error {
 	err := writeFileAtomic(path, func(out io.Writer) error {
 		return o.render(out, fonts)
@@ -272,9 +319,18 @@ func parseLeague(arg string) (string, int, error) {
 
 // parseTeam extracts the team id from a bfv.de team URL or a bare team id.
 func parseTeam(arg string) (string, error) {
-	m := reTeamID.FindStringSubmatch(arg)
-	if m == nil {
+	id, err := parseID(arg)
+	if err != nil {
 		return "", errors.New("no team id in URL (expected something like …/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R)")
+	}
+	return id, nil
+}
+
+// parseID extracts a team or club id from a bfv.de URL or a bare id.
+func parseID(arg string) (string, error) {
+	m := reID.FindStringSubmatch(arg)
+	if m == nil {
+		return "", errors.New("no team or club id in URL (expected something like …/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I)")
 	}
 	return m[1], nil
 }

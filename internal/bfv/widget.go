@@ -48,13 +48,15 @@ type teamMatchesData struct {
 }
 
 type widgetMatch struct {
-	MatchID       string `json:"matchId"`
-	CompoundID    string `json:"compoundId"`
-	KickoffDate   string `json:"kickoffDate"`
-	KickoffTime   string `json:"kickoffTime"`
-	HomeTeamName  string `json:"homeTeamName"`
-	GuestTeamName string `json:"guestTeamName"`
-	Result        string `json:"result"`
+	MatchID         string `json:"matchId"`
+	CompoundID      string `json:"compoundId"`
+	CompetitionName string `json:"competitionName"`
+	TeamType        string `json:"teamType"`
+	KickoffDate     string `json:"kickoffDate"`
+	KickoffTime     string `json:"kickoffTime"`
+	HomeTeamName    string `json:"homeTeamName"`
+	GuestTeamName   string `json:"guestTeamName"`
+	Result          string `json:"result"`
 
 	HomeTeamPermanentID  string `json:"homeTeamPermanentId"`
 	GuestTeamPermanentID string `json:"guestTeamPermanentId"`

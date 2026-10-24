@@ -16,12 +16,14 @@ bfv-miner -o ll.pdf \
 
 The argument is a bfv.de league URL containing the competition id (`…-G`) or
 the bare id; for `-kind spielplan` and `-kind torjaeger` it is a team URL
-(`https://www.bfv.de/mannschaften/<name>/<id>`) or the bare team id. Flags:
+(`https://www.bfv.de/mannschaften/<name>/<id>`), for the `jugend` kinds a
+club URL (`https://www.bfv.de/vereine/<name>/<id>`), or the bare id. Flags:
 
 - `-o` output file (default named after the league and kind, e.g.
   `Landesliga-Mitte-spieltag-16.pdf`)
 - `-kind` what to write, see below (default `spieltage`)
 - `-matchday N` centre the window on matchday N instead of the current one
+- `-days N` for the `jugend` kinds, how many days back or ahead (default 7)
 - `-version` print the version
 
 | Kind | Content |
@@ -30,6 +32,8 @@ the bare id; for `-kind spielplan` and `-kind torjaeger` it is a team URL
 | `tabelle` | current table with club logos, goals, and promotion/relegation zones coloured |
 | `spielplan` | a team's season fixtures with matchday, kickoff and result, byes included; takes a team instead of a league |
 | `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)"; takes a team, needs its squad to be public on bfv.de |
+| `jugend-ergebnisse` | results of all the club's youth teams over the last days, grouped by age group and competition; takes a club |
+| `jugend-vorschau` | the same for the coming days, without results |
 
 > **Unofficial.** bfv-miner is not affiliated with or endorsed by the
 > Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
@@ -86,7 +90,10 @@ them in one go, so updating the fixtures is: run the tool, update the links.
      with the last); with `"opponent": true` it lists those of the team's
      next league opponent instead, for the guest page. Clubs that keep their
      squad private on bfv.de have no scorers to list; that file then fails
-     with a message and the previous one is kept.
+     with a message and the previous one is kept. The `jugend` kinds take
+     `club`, the club's page on bfv.de, and list the matches of every team
+     linked there, over the last (`jugend-ergebnisse`) or next
+     (`jugend-vorschau`) `days` days (default 7).
 3. **Generate the PDFs once** (see below), so there is something to place.
 4. **Place each PDF in InDesign.** Draw a graphic frame where the table goes,
    then *File → Place* (*Datei → Platzieren*), choose e.g.
@@ -127,8 +134,8 @@ them in one go, so updating the fixtures is: run the tool, update the links.
 2. Open the InDesign document. When it asks about modified links, choose
    *Update Links* (*Verknüpfungen aktualisieren*). If it is already open:
    *Window → Links* (*Fenster → Verknüpfungen*), select the generated PDFs
-   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`, `Saisonspielplan-H*.pdf`) with
-   the yellow warning sign and click *Update Link*
+   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`, `Jugend-*.pdf`) with the
+   yellow warning sign and click *Update Link*
    (*Verknüpfung aktualisieren*).
 3. Check the tables, then export or print as usual.
 
