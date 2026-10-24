@@ -6,6 +6,7 @@ go_library(
         "client.go",
         "model.go",
         "page.go",
+        "table.go",
         "widget.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/internal/bfv",
@@ -18,6 +19,7 @@ go_test(
     srcs = [
         "client_test.go",
         "page_test.go",
+        "table_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":bfv"],

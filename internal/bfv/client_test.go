@@ -58,6 +58,12 @@ func newTestServer(t *testing.T) *Client {
 			{"matchId":%q,"compoundId":%q,"kickoffDate":"18.10.2026","kickoffTime":"15:00","homeTeamName":"Charlie","guestTeamName":"Alpha","result":""}]}}`,
 			id("M2"), testCID, id("M3"), testCID),
 	}
+	return serve(t, routes)
+}
+
+// serve returns a Client whose endpoints answer with the body routed by path.
+func serve(t *testing.T, routes map[string]string) *Client {
+	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, ok := routes[r.URL.Path]
 		if !ok {
@@ -67,7 +73,7 @@ func newTestServer(t *testing.T) *Client {
 		fmt.Fprint(w, body)
 	}))
 	t.Cleanup(srv.Close)
-	return &Client{HTTP: srv.Client(), BaseWeb: srv.URL, BaseWidget: srv.URL + "/widget"}
+	return &Client{HTTP: srv.Client(), BaseWeb: srv.URL, BaseWidget: srv.URL + "/widget", BaseLogo: srv.URL + "/logo/"}
 }
 
 func TestFetchWindow(t *testing.T) {

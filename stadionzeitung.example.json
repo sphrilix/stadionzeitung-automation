@@ -10,11 +10,29 @@
       "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G"
     },
     {
+      "file": "Tabelle-H1.pdf",
+      "kind": "tabelle",
+      "highlight": "Hauzenberg",
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G"
+    },
+    {
       "file": "Spielplan-H2.pdf",
       "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G"
     },
     {
+      "file": "Tabelle-H2.pdf",
+      "kind": "tabelle",
+      "highlight": "Hauzenberg",
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G"
+    },
+    {
       "file": "Spielplan-H3.pdf",
+      "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G"
+    },
+    {
+      "file": "Tabelle-H3.pdf",
+      "kind": "tabelle",
+      "highlight": "Hauzenberg",
       "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G"
     }
   ]

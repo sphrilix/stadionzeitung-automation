@@ -1,7 +1,7 @@
-// Command bfv-miner writes PDFs with the previous, current and next matchday
-// of BFV leagues.
+// Command bfv-miner writes PDFs with BFV league data: the previous, current
+// and next matchday, or the table.
 //
-//	bfv-miner [-o out.pdf] [-matchday N] <bfv.de league URL | competition id>
+//	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
@@ -34,8 +34,9 @@ var version = "dev"
 
 func main() {
 	configPath := flag.String("config", "", "write every PDF listed in this JSON config instead of a single league")
-	out := flag.String("o", "", "output PDF (default: <league>-spieltag-<N>.pdf)")
+	out := flag.String("o", "", "output PDF (default: named after the league and kind)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
+	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0])
@@ -49,13 +50,13 @@ func main() {
 
 	var err error
 	switch {
-	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0):
-		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o or -matchday")
+	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0 || *kind != kindMatchdays):
+		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o, -matchday or -kind")
 		os.Exit(2)
 	case *configPath != "":
 		err = runConfig(fromWorkingDir(*configPath))
 	case flag.NArg() == 1:
-		err = runSingle(flag.Arg(0), *out, *matchday)
+		err = runSingle(flag.Arg(0), *out, *kind, *matchday)
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -66,22 +67,19 @@ func main() {
 	}
 }
 
-func runSingle(league, out string, matchday int) error {
-	compoundID, urlDay, err := parseLeague(league)
-	if err != nil {
+func runSingle(arg, out, kind string, matchday int) error {
+	t := team{Kind: kind, League: arg, matchday: matchday}
+	if err := t.validate(); err != nil {
 		return err
 	}
-	if matchday == 0 {
-		matchday = urlDay
-	}
-	w, err := fetch(compoundID, matchday)
+	o, err := build(t, bfv.NewClient())
 	if err != nil {
 		return err
 	}
 	if out == "" {
-		out = fmt.Sprintf("%s-spieltag-%d.pdf", strings.Trim(reUnsafe.ReplaceAllString(w.League, "-"), "-"), w.Current)
+		out = strings.Trim(reUnsafe.ReplaceAllString(o.name, "-"), "-") + ".pdf"
 	}
-	return write(fromWorkingDir(out), w, render.Fonts{})
+	return write(fromWorkingDir(out), o, render.Fonts{})
 }
 
 // runConfig writes every configured PDF. A failing team does not stop the
@@ -95,41 +93,97 @@ func runConfig(path string) error {
 	if err != nil {
 		return err
 	}
+	bc := bfv.NewClient()
 	var errs []error
 	for _, t := range c.Teams {
-		if err := runTeam(c.OutDir, t, fonts); err != nil {
+		o, err := build(t, bc)
+		if err == nil {
+			err = write(filepath.Join(c.OutDir, t.File), o, fonts)
+		}
+		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", t.File, err))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func runTeam(outDir string, t team, fonts render.Fonts) error {
-	compoundID, matchday, err := parseLeague(t.League)
-	if err != nil {
-		return err
-	}
-	w, err := fetch(compoundID, matchday)
-	if err != nil {
-		return err
-	}
-	return write(filepath.Join(outDir, t.File), w, fonts)
+// output is a fetched PDF, ready to be rendered.
+type output struct {
+	// label describes the content in the progress line, name is the default
+	// file name (without extension) when writing a single PDF.
+	label, name string
+	render      func(io.Writer, render.Fonts) error
 }
 
-func fetch(compoundID string, matchday int) (bfv.Window, error) {
+// build fetches the data for one config entry.
+func build(t team, c *bfv.Client) (output, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	return bfv.NewClient().FetchWindow(ctx, compoundID, matchday)
+	switch t.Kind {
+	case kindTable:
+		return buildTable(ctx, c, t)
+	default:
+		return buildMatchdays(ctx, c, t)
+	}
 }
 
-func write(path string, w bfv.Window, fonts render.Fonts) error {
+func buildMatchdays(ctx context.Context, c *bfv.Client, t team) (output, error) {
+	compoundID, matchday, err := parseLeague(t.League)
+	if err != nil {
+		return output{}, err
+	}
+	if t.matchday != 0 {
+		matchday = t.matchday
+	}
+	w, err := c.FetchWindow(ctx, compoundID, matchday)
+	if err != nil {
+		return output{}, err
+	}
+	return output{
+		label: fmt.Sprintf("Spieltag %d", w.Current),
+		name:  fmt.Sprintf("%s-spieltag-%d", w.League, w.Current),
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.Render(out, w.Days, fonts)
+		},
+	}, nil
+}
+
+func buildTable(ctx context.Context, c *bfv.Client, t team) (output, error) {
+	compoundID, _, err := parseLeague(t.League)
+	if err != nil {
+		return output{}, err
+	}
+	tbl, err := c.FetchTable(ctx, compoundID)
+	if err != nil {
+		return output{}, err
+	}
+	// A missing logo only leaves its cell empty.
+	logos := map[string][]byte{}
+	for _, r := range tbl.Rows {
+		if r.ClubID == "" {
+			continue
+		}
+		if b, err := c.ClubLogo(ctx, r.ClubID); err == nil {
+			logos[r.ClubID] = b
+		}
+	}
+	return output{
+		label: "Tabelle",
+		name:  tbl.League + "-tabelle",
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.RenderTable(out, tbl, fonts, render.TableOptions{Logos: logos, Highlight: t.Highlight})
+		},
+	}, nil
+}
+
+func write(path string, o output, fonts render.Fonts) error {
 	err := writeFileAtomic(path, func(out io.Writer) error {
-		return render.Render(out, w.Days, fonts)
+		return o.render(out, fonts)
 	})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s (Spieltag %d)\n", path, w.Current)
+	fmt.Printf("%s (%s)\n", path, o.label)
 	return nil
 }
 
