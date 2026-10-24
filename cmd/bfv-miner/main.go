@@ -1,7 +1,8 @@
 // Command bfv-miner writes PDFs with BFV league data: the previous, current
-// and next matchday, or the table.
+// and next matchday, the table, or a team's season fixtures.
 //
 //	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
+//	bfv-miner [-o out.pdf] -kind spielplan <bfv.de team URL | team id>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
@@ -25,6 +26,7 @@ import (
 
 var (
 	reCompoundID = regexp.MustCompile(`[0-9A-Z]{32}-G`)
+	reTeamID     = regexp.MustCompile(`(?:^|/)([0-9A-Z]{32})(?:$|[/?#])`)
 	reURLDay     = regexp.MustCompile(`/spieltag/(\d+)`)
 	reUnsafe     = regexp.MustCompile(`[^\pL\pN]+`)
 )
@@ -39,7 +41,7 @@ func main() {
 	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan <bfv.de team URL | team id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -69,6 +71,9 @@ func main() {
 
 func runSingle(arg, out, kind string, matchday int) error {
 	t := team{Kind: kind, League: arg, matchday: matchday}
+	if kind == kindSeason {
+		t = team{Kind: kind, Team: arg}
+	}
 	if err := t.validate(); err != nil {
 		return err
 	}
@@ -122,6 +127,8 @@ func build(t team, c *bfv.Client) (output, error) {
 	switch t.Kind {
 	case kindTable:
 		return buildTable(ctx, c, t)
+	case kindSeason:
+		return buildSeason(ctx, c, t)
 	default:
 		return buildMatchdays(ctx, c, t)
 	}
@@ -176,6 +183,24 @@ func buildTable(ctx context.Context, c *bfv.Client, t team) (output, error) {
 	}, nil
 }
 
+func buildSeason(ctx context.Context, c *bfv.Client, t team) (output, error) {
+	teamID, err := parseTeam(t.Team)
+	if err != nil {
+		return output{}, err
+	}
+	s, err := c.FetchSeason(ctx, teamID)
+	if err != nil {
+		return output{}, err
+	}
+	return output{
+		label: "Spielplan " + s.Team,
+		name:  s.Team + "-spielplan",
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.RenderSeason(out, s, fonts)
+		},
+	}, nil
+}
+
 func write(path string, o output, fonts render.Fonts) error {
 	err := writeFileAtomic(path, func(out io.Writer) error {
 		return o.render(out, fonts)
@@ -209,4 +234,13 @@ func parseLeague(arg string) (string, int, error) {
 		day, _ = strconv.Atoi(m[1])
 	}
 	return ids[len(ids)-1], day, nil
+}
+
+// parseTeam extracts the team id from a bfv.de team URL or a bare team id.
+func parseTeam(arg string) (string, error) {
+	m := reTeamID.FindStringSubmatch(arg)
+	if m == nil {
+		return "", errors.New("no team id in URL (expected something like …/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R)")
+	}
+	return m[1], nil
 }

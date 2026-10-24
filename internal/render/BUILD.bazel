@@ -4,6 +4,7 @@ go_library(
     name = "render",
     srcs = [
         "pdf.go",
+        "season.go",
         "table.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/internal/render",
@@ -20,6 +21,7 @@ go_test(
     name = "render_test",
     srcs = [
         "pdf_test.go",
+        "season_test.go",
         "table_test.go",
     ],
     embed = [":render"],
