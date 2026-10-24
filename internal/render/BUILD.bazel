@@ -4,6 +4,7 @@ go_library(
     name = "render",
     srcs = [
         "pdf.go",
+        "scorers.go",
         "season.go",
         "table.go",
     ],
@@ -21,6 +22,7 @@ go_test(
     name = "render_test",
     srcs = [
         "pdf_test.go",
+        "scorers_test.go",
         "season_test.go",
         "table_test.go",
     ],

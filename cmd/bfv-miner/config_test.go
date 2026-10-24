@@ -109,3 +109,16 @@ func TestParseTeam(t *testing.T) {
 		t.Errorf("parseTeam(league URL) = %q, want an error", got)
 	}
 }
+
+func TestValidateScorers(t *testing.T) {
+	const teamID = "016PE85GAS000000VV0AG811VTE5EA5R"
+	if err := (team{Kind: kindScorers, Team: teamID, Opponent: true, Top: 4}).validate(); err != nil {
+		t.Errorf("torjaeger with team: %v", err)
+	}
+	if err := (team{Kind: kindScorers, Team: teamID, Top: -1}).validate(); err == nil {
+		t.Error("expected an error for a negative top")
+	}
+	if err := (team{Kind: kindScorers, League: "0307PL23RO000007VS5489BUVT69HBT7-G"}).validate(); err == nil {
+		t.Error("expected an error for torjaeger without team")
+	}
+}

@@ -21,6 +21,17 @@
       "team": "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R"
     },
     {
+      "file": "Torjaeger-H1.pdf",
+      "kind": "torjaeger",
+      "team": "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R"
+    },
+    {
+      "file": "Torjaeger-Gast.pdf",
+      "kind": "torjaeger",
+      "opponent": true,
+      "team": "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R"
+    },
+    {
       "file": "Spielplan-H2.pdf",
       "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G"
     },
@@ -36,6 +47,11 @@
       "team": "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF"
     },
     {
+      "file": "Torjaeger-H2.pdf",
+      "kind": "torjaeger",
+      "team": "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF"
+    },
+    {
       "file": "Spielplan-H3.pdf",
       "league": "https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G"
     },
@@ -48,6 +64,11 @@
     {
       "file": "Saisonspielplan-H3.pdf",
       "kind": "spielplan",
+      "team": "https://www.bfv.de/mannschaften/sg-haag-1-hauzenberg-3/016PBL2NIG000000VV0AG80NVV8OQVTB"
+    },
+    {
+      "file": "Torjaeger-H3.pdf",
+      "kind": "torjaeger",
       "team": "https://www.bfv.de/mannschaften/sg-haag-1-hauzenberg-3/016PBL2NIG000000VV0AG80NVV8OQVTB"
     }
   ]
