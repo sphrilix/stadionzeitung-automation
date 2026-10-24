@@ -1,6 +1,6 @@
 # bfv-miner
 
-[![CI](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml)
+[![CI](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml)
 
 Writes a PDF with the previous, current and next matchday ("Spieltag") of any
 BFV league, including results, as boxed tables without a heading (the layout
@@ -19,11 +19,17 @@ the bare id. Flags:
 - `-matchday N` centre the window on matchday N instead of the current one
 - `-version` print the version
 
+> **Unofficial.** bfv-miner is not affiliated with or endorsed by the
+> Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
+> widget API behind BFV's embeddable widgets, both of which can change
+> without notice and break the tool. Match data belongs to the BFV; check
+> its terms before publishing generated tables beyond your own club's use.
+
 ## Installation
 
 Download `bfv-miner_<version>_windows_amd64.zip` from the
-[latest release](https://github.com/sphrilix/bfv-miner/releases/latest) and
-unpack it. The archive holds `bfv-miner.exe`, this README and
+[latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest) and
+unpack it. The archive holds `bfv-miner.exe`, this README, the license and
 `stadionzeitung.example.json`; `checksums.txt` lists the SHA-256 sums.
 
 Releases contain only the Windows build by default. Linux and macOS archives
@@ -37,30 +43,71 @@ start (*More info → Run anyway*); on macOS, clear the quarantine flag with
 
 ## Stadionzeitung (InDesign)
 
-The Stadionzeitung places `SZ/Dateien/Spielplan-H1.pdf`, `-H2.pdf` and
-`-H3.pdf` as linked graphics. `-config` regenerates all of them in one go:
+Made for a club's matchday programme ("Stadionzeitung"): an InDesign document
+places one PDF per team as a linked graphic, and `-config` regenerates all of
+them in one go, so updating the fixtures is: run the tool, update the links.
 
-```sh
-bfv-miner -config stadionzeitung.json
-```
+### One-time setup
 
-See `stadionzeitung.example.json`: `outDir` is the linked folder (replace
-`<user>` with your Windows user), `fonts` points at Calibri (any TrueType
-font works; without it the Go font is used), and each team maps a file name
-to its bfv.de league. Relative paths are
-resolved against the config file. Each PDF's page is cropped to its content
-and replaced atomically, so InDesign never links a half-written file.
+1. **Get the tool.** Unpack `bfv-miner_<version>_windows_amd64.zip` from the
+   [latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest),
+   e.g. into `C:\bfv-miner\`, on the PC that has the InDesign document's
+   folder (e.g. synced via OneDrive).
+2. **Write the config.** Copy `stadionzeitung.example.json` to
+   `stadionzeitung.json` next to `bfv-miner.exe` and adjust it:
+   - `outDir`: the folder the InDesign document links its graphics from. It
+     must already exist. Use forward slashes (`C:/Users/…`) or doubled
+     backslashes (`C:\\Users\\…`); relative paths are resolved against the
+     config file.
+   - `fonts`: TrueType files for regular and bold text, typically the font of
+     the layout (the example uses Calibri). Set both or neither; without them
+     the Go font is used.
+   - `teams`: one entry per PDF. `file` is the name inside `outDir`, `league`
+     the team's league page on bfv.de (open the league under *Ergebnisse*
+     and copy the address; it ends in `…-G`).
+3. **Generate the PDFs once** (see below), so there is something to place.
+4. **Place each PDF in InDesign.** Draw a graphic frame where the table goes,
+   then *File → Place* (*Datei → Platzieren*), choose e.g.
+   `Spielplan-H1.pdf` and tick *Show Import Options*
+   (*Importoptionen anzeigen*). In the dialog, set *Crop to: Media*
+   (*Zuschneiden auf: Medien*), since each page is already cropped to the
+   table, and enable *Transparent Background*
+   (*Transparenter Hintergrund*).
+5. **Let the frame follow the table.** With the frame selected,
+   *Object → Fitting → Frame Fitting Options*
+   (*Objekt → Anpassen → Rahmeneinpassungsoptionen*): enable *Auto-Fit*
+   (*Automatisch einpassen*), set *Fitting* to *Fit Content Proportionally*
+   (*Inhalt proportional anpassen*) and the reference point to top left. The
+   table then refits when a matchday has more or fewer matches.
+6. **Optional: a double-click shortcut.** Save this as
+   `Spielplan aktualisieren.bat` next to `bfv-miner.exe`:
 
-In InDesign:
+   ```bat
+   @echo off
+   cd /d "%~dp0"
+   bfv-miner.exe -config stadionzeitung.json
+   pause
+   ```
 
-1. Links panel → select the modified `Spielplan-H*.pdf` → *Update Link*.
-2. Once per frame: *Object → Fitting → Frame Fitting Options*, enable
-   *Auto-Fit* with *Fit Content Proportionally*, so the block refits when a
-   matchday has more or fewer matches.
+### For every issue
 
-On the Windows PC that holds the OneDrive folder, unpack
-`bfv-miner_<version>_windows_amd64.zip` next to the config and run
-`bfv-miner.exe -config stadionzeitung.json`.
+1. Run the tool: double-click the `.bat` file, or in a terminal in the
+   tool's folder
+
+   ```sh
+   bfv-miner.exe -config stadionzeitung.json
+   ```
+
+   It writes every PDF listed in the config with the previous, current and
+   next matchday. A file is replaced in one step, so InDesign or OneDrive
+   never see a half-written PDF; if a league fails, its old PDF is kept and
+   the error is printed.
+2. Open the InDesign document. When it asks about modified links, choose
+   *Update Links* (*Verknüpfungen aktualisieren*). If it is already open:
+   *Window → Links* (*Fenster → Verknüpfungen*), select the
+   `Spielplan-H*.pdf` entries with the yellow warning sign and click
+   *Update Link* (*Verknüpfung aktualisieren*).
+3. Check the tables, then export or print as usual.
 
 ## How it works
 
@@ -105,3 +152,7 @@ Supported: `windows_amd64`, `linux_amd64`, `linux_arm64`, `darwin_amd64`,
 `darwin_arm64`. The archives are added to the release and `checksums.txt` is
 regenerated for all of them. Locally, `bazel build --config=release` stamps
 `git describe`; plain builds report `dev`.
+
+## License
+
+[MIT](LICENSE)

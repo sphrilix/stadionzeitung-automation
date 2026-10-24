@@ -11,7 +11,7 @@ import (
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/sphrilix/bfv-miner/internal/bfv"
+	"github.com/sphrilix/stadionzeitung-automation/internal/bfv"
 )
 
 // Geometry in millimetres. Columns of a matchday box:

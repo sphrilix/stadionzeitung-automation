@@ -1,4 +1,4 @@
-module github.com/sphrilix/bfv-miner
+module github.com/sphrilix/stadionzeitung-automation
 
 go 1.26.0
 

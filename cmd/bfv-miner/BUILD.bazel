@@ -6,7 +6,7 @@ go_library(
         "config.go",
         "main.go",
     ],
-    importpath = "github.com/sphrilix/bfv-miner/cmd/bfv-miner",
+    importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/bfv-miner",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/bfv",

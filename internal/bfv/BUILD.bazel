@@ -8,7 +8,7 @@ go_library(
         "page.go",
         "widget.go",
     ],
-    importpath = "github.com/sphrilix/bfv-miner/internal/bfv",
+    importpath = "github.com/sphrilix/stadionzeitung-automation/internal/bfv",
     visibility = ["//:__subpackages__"],
     deps = ["@org_golang_x_sync//errgroup"],
 )
