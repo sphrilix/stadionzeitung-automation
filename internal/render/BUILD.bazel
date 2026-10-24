@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "render",
     srcs = ["pdf.go"],
-    importpath = "github.com/sphrilix/bfv-miner/internal/render",
+    importpath = "github.com/sphrilix/stadionzeitung-automation/internal/render",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/bfv",

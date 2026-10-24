@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sphrilix/bfv-miner/internal/render"
+	"github.com/sphrilix/stadionzeitung-automation/internal/render"
 )
 
 // config describes a batch of PDFs, typically the ones a newspaper layout

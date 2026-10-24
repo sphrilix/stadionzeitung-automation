@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sphrilix/bfv-miner/internal/bfv"
+	"github.com/sphrilix/stadionzeitung-automation/internal/bfv"
 )
 
 func TestRender(t *testing.T) {

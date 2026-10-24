@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sphrilix/bfv-miner/internal/bfv"
-	"github.com/sphrilix/bfv-miner/internal/render"
+	"github.com/sphrilix/stadionzeitung-automation/internal/bfv"
+	"github.com/sphrilix/stadionzeitung-automation/internal/render"
 )
 
 var (

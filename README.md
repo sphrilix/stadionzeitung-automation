@@ -1,6 +1,6 @@
 # bfv-miner
 
-[![CI](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/bfv-miner/actions/workflows/ci.yml)
+[![CI](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml)
 
 Writes a PDF with the previous, current and next matchday ("Spieltag") of any
 BFV league, including results, as boxed tables without a heading (the layout
@@ -28,7 +28,7 @@ the bare id. Flags:
 ## Installation
 
 Download `bfv-miner_<version>_windows_amd64.zip` from the
-[latest release](https://github.com/sphrilix/bfv-miner/releases/latest) and
+[latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest) and
 unpack it. The archive holds `bfv-miner.exe`, this README, the license and
 `stadionzeitung.example.json`; `checksums.txt` lists the SHA-256 sums.
 
@@ -50,7 +50,7 @@ them in one go, so updating the fixtures is: run the tool, update the links.
 ### One-time setup
 
 1. **Get the tool.** Unpack `bfv-miner_<version>_windows_amd64.zip` from the
-   [latest release](https://github.com/sphrilix/bfv-miner/releases/latest),
+   [latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest),
    e.g. into `C:\bfv-miner\`, on the PC that has the InDesign document's
    folder (e.g. synced via OneDrive).
 2. **Write the config.** Copy `stadionzeitung.example.json` to
