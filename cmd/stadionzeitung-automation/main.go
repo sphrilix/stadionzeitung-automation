@@ -1,14 +1,14 @@
-// Command bfv-miner writes PDFs with BFV data: a league's previous, current
+// Command stadionzeitung-automation writes PDFs with BFV data: a league's previous, current
 // and next matchday or its table, a team's season fixtures or top scorers,
 // or a club's recent and upcoming youth matches. With FuPa's permission it
 // adds what BFV lacks: squads, league top scorers and referees.
 //
-//	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
-//	bfv-miner [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
-//	bfv-miner [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
-//	bfv-miner [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
-//	bfv-miner -config stadionzeitung.json
-//	bfv-miner -version
+//	stadionzeitung-automation [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
+//	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
+//	stadionzeitung-automation [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
+//	stadionzeitung-automation [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
+//	stadionzeitung-automation -config stadionzeitung.json
+//	stadionzeitung-automation -version
 package main
 
 import (
@@ -48,19 +48,19 @@ func main() {
 	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 	if *showVersion {
-		fmt.Println("bfv-miner", version)
+		fmt.Println("stadionzeitung-automation", version)
 		return
 	}
 
 	var err error
 	switch {
 	case *configPath != "" && (flag.NArg() != 0 || *out != "" || *matchday != 0 || *kind != kindMatchdays || *days != 0):
-		fmt.Fprintln(os.Stderr, "bfv-miner: -config takes no league argument and no -o, -matchday, -kind or -days")
+		fmt.Fprintln(os.Stderr, "stadionzeitung-automation: -config takes no league argument and no -o, -matchday, -kind or -days")
 		os.Exit(2)
 	case *configPath != "":
 		err = runConfig(fromWorkingDir(*configPath))
@@ -71,7 +71,7 @@ func main() {
 		os.Exit(2)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "bfv-miner:", err)
+		fmt.Fprintln(os.Stderr, "stadionzeitung-automation:", err)
 		os.Exit(1)
 	}
 }

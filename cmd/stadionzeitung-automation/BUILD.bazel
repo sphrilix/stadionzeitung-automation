@@ -1,13 +1,13 @@
 load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 go_library(
-    name = "bfv-miner_lib",
+    name = "stadionzeitung-automation_lib",
     srcs = [
         "config.go",
         "fupa.go",
         "main.go",
     ],
-    importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/bfv-miner",
+    importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/stadionzeitung-automation",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/bfv",
@@ -17,18 +17,18 @@ go_library(
 )
 
 go_binary(
-    name = "bfv-miner",
-    embed = [":bfv-miner_lib"],
+    name = "stadionzeitung-automation",
+    embed = [":stadionzeitung-automation_lib"],
     visibility = ["//visibility:public"],
     x_defs = {"main.version": "{STABLE_VERSION}"},
 )
 
 go_test(
-    name = "bfv-miner_test",
+    name = "stadionzeitung-automation_test",
     srcs = [
         "config_test.go",
         "fupa_test.go",
     ],
-    embed = [":bfv-miner_lib"],
+    embed = [":stadionzeitung-automation_lib"],
     deps = ["//internal/fupa"],
 )

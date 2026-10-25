@@ -2,7 +2,7 @@
 
 An inventory of the matchday programme, page by page, based on the issue
 for FC Sturm Hauzenberg – SC Luhe-Wildenau (17.10.2026, 40 pages). For
-each block: where the data comes from and whether bfv-miner can generate
+each block: where the data comes from and whether stadionzeitung-automation can generate
 it. Sponsor pages (every even page) are left out.
 
 Data sources used:
