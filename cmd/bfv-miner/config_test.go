@@ -138,3 +138,18 @@ func TestValidateYouth(t *testing.T) {
 		t.Errorf("parseID(club URL) = %q, %v", id, err)
 	}
 }
+
+func TestValidateFuPa(t *testing.T) {
+	for _, kind := range fupaKinds {
+		if err := (team{Kind: kind, FuPa: "fc-sturm-hauzenberg-m1"}).validate(); err != nil {
+			t.Errorf("%s with fupa: %v", kind, err)
+		}
+		if err := (team{Kind: kind, Team: "016PE85GAS000000VV0AG811VTE5EA5R"}).validate(); err == nil {
+			t.Errorf("%s without fupa: expected an error", kind)
+		}
+	}
+	// FuPa can stand in for the BFV team.
+	if err := (team{Kind: kindScorers, FuPa: "fc-sturm-hauzenberg-m1", Opponent: true}).validate(); err != nil {
+		t.Errorf("torjaeger with fupa only: %v", err)
+	}
+}
