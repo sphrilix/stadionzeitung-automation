@@ -6,6 +6,7 @@ go_library(
         "client.go",
         "model.go",
         "page.go",
+        "season.go",
         "table.go",
         "widget.go",
     ],
@@ -19,6 +20,7 @@ go_test(
     srcs = [
         "client_test.go",
         "page_test.go",
+        "season_test.go",
         "table_test.go",
     ],
     data = glob(["testdata/**"]),

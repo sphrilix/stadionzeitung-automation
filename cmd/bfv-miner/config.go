@@ -33,6 +33,8 @@ type team struct {
 	Kind string `json:"kind"`
 	// League is a bfv.de league URL or competition id.
 	League string `json:"league"`
+	// Team is a bfv.de team URL or team id, for kinds about one team.
+	Team string `json:"team"`
 	// Highlight sets table rows of teams whose name contains it in bold.
 	Highlight string `json:"highlight"`
 
@@ -43,15 +45,18 @@ type team struct {
 const (
 	kindMatchdays = "spieltage"
 	kindTable     = "tabelle"
+	kindSeason    = "spielplan"
 )
 
-var kinds = []string{kindMatchdays, kindTable}
+var kinds = []string{kindMatchdays, kindTable, kindSeason}
 
 func (t team) validate() error {
-	if t.Kind != "" && !slices.Contains(kinds, t.Kind) {
+	switch {
+	case t.Kind != "" && !slices.Contains(kinds, t.Kind):
 		return fmt.Errorf("unknown kind %q (want one of %s)", t.Kind, strings.Join(kinds, ", "))
-	}
-	if t.League == "" {
+	case t.Kind == kindSeason && t.Team == "":
+		return errors.New("needs a team")
+	case t.Kind != kindSeason && t.League == "":
 		return errors.New("needs a league")
 	}
 	return nil

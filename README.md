@@ -15,7 +15,8 @@ bfv-miner -o ll.pdf \
 ```
 
 The argument is a bfv.de league URL containing the competition id (`…-G`) or
-the bare id. Flags:
+the bare id; for `-kind spielplan` it is a team URL
+(`https://www.bfv.de/mannschaften/<name>/<id>`) or the bare team id. Flags:
 
 - `-o` output file (default named after the league and kind, e.g.
   `Landesliga-Mitte-spieltag-16.pdf`)
@@ -27,6 +28,7 @@ the bare id. Flags:
 | --- | --- |
 | `spieltage` | previous, current and next matchday with results |
 | `tabelle` | current table with club logos, goals, and promotion/relegation zones coloured |
+| `spielplan` | a team's season fixtures with matchday, kickoff and result, byes included; takes a team instead of a league |
 
 > **Unofficial.** bfv-miner is not affiliated with or endorsed by the
 > Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
@@ -76,7 +78,9 @@ them in one go, so updating the fixtures is: run the tool, update the links.
      and copy the address; it ends in `…-G`). `kind` picks the content (see
      the table above; default `spieltage`). For a `tabelle`, `highlight`
      sets the rows of teams whose name contains it in bold, e.g.
-     `"Hauzenberg"` for the club's own teams.
+     `"Hauzenberg"` for the club's own teams. A `spielplan` takes `team`
+     instead of `league`: the team's page on bfv.de (on the club page under
+     *Mannschaften*, or a team name on the league page).
 3. **Generate the PDFs once** (see below), so there is something to place.
 4. **Place each PDF in InDesign.** Draw a graphic frame where the table goes,
    then *File → Place* (*Datei → Platzieren*), choose e.g.
@@ -117,9 +121,9 @@ them in one go, so updating the fixtures is: run the tool, update the links.
 2. Open the InDesign document. When it asks about modified links, choose
    *Update Links* (*Verknüpfungen aktualisieren*). If it is already open:
    *Window → Links* (*Fenster → Verknüpfungen*), select the generated PDFs
-   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`) with the yellow warning sign
-   and click
-   *Update Link* (*Verknüpfung aktualisieren*).
+   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`, `Saisonspielplan-H*.pdf`) with
+   the yellow warning sign and click *Update Link*
+   (*Verknüpfung aktualisieren*).
 3. Check the tables, then export or print as usual.
 
 ## How it works

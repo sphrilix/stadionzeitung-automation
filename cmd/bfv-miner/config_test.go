@@ -85,3 +85,27 @@ func TestWriteFileAtomicKeepsOldFileOnError(t *testing.T) {
 		t.Errorf("file = %q, want the new content", b)
 	}
 }
+
+func TestValidateSeasonNeedsTeam(t *testing.T) {
+	if err := (team{Kind: kindSeason, League: "0307PL23RO000007VS5489BUVT69HBT7-G"}).validate(); err == nil {
+		t.Error("expected an error for a spielplan without team")
+	}
+	if err := (team{Kind: kindSeason, Team: "016PE85GAS000000VV0AG811VTE5EA5R"}).validate(); err != nil {
+		t.Errorf("spielplan with team: %v", err)
+	}
+}
+
+func TestParseTeam(t *testing.T) {
+	for in, want := range map[string]string{
+		"https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R": "016PE85GAS000000VV0AG811VTE5EA5R",
+		"016PE85GAS000000VV0AG811VTE5EA5R": "016PE85GAS000000VV0AG811VTE5EA5R",
+	} {
+		if got, err := parseTeam(in); err != nil || got != want {
+			t.Errorf("parseTeam(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+	// A league URL carries a competition id, not a team id.
+	if got, err := parseTeam("https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G"); err == nil {
+		t.Errorf("parseTeam(league URL) = %q, want an error", got)
+	}
+}
