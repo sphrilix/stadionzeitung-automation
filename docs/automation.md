@@ -33,6 +33,7 @@ Data sources used:
 | 13, 29 | Top-Torjäger of the league | `liga-torjaeger` | FuPa `/competitions/{slug}/seasons/current/scorers` | #7 |
 | 3, 5 | Referee | `schiedsrichter` | FuPa `/matches/{slug}` | #7 |
 | 5 | The whole guest page (name, team photo, coaches, squad, scorers) in one PDF | `gast: [seite]` | FuPa squad and team photo | |
+| 11, 27 | The club's own team pages (name, team photo, staff, squad, scorers) in one PDF | `pdfs: [seite]` | FuPa squad and team photo | |
 | 13, 29 | Table and Top-Torjäger in one PDF | `tabelle-torjaeger` | BFV table + FuPa scorers | |
 
 Limits:

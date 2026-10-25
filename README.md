@@ -42,7 +42,7 @@ inventory, including what stays manual.
 | `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa |
 | `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa |
 | `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV and FuPa |
-| `seite` | the whole guest page in one PDF: the opponent's name, team photo, coaches, squad and top scorers | Gastmannschaft (5) | FuPa |
+| `seite` | a team's whole page in one PDF: its name, team photo, staff, squad and top scorers, for the club's teams and the guest | Kader (11, 27), Gastmannschaft (5) | FuPa |
 | `schiedsrichter` | the referee of the next league match and their club | Grußwort (3), guest (5) | FuPa |
 
 The FuPa kinds need FuPa's written permission, see [FuPa](#fupa).
@@ -85,14 +85,16 @@ teams:
   H1:
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
-    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader, schiedsrichter]
+    name: FC Sturm Hauzenberg I
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, seite, schiedsrichter]
     gast: [seite]
   H2:
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
     pdfs: [spieltage, tabelle]
 ```
 
-That writes `Spielplan-H1.pdf`, `Tabelle-Torjaeger-H1.pdf`, …, `Seite-H1-Gast.pdf`,
+That writes `Spielplan-H1.pdf`, `Tabelle-Torjaeger-H1.pdf`, …, `Seite-H1.pdf`,
+`Seite-H1-Gast.pdf`,
 `Spielplan-H2.pdf`, `Tabelle-H2.pdf`, `Jugend-Ergebnisse.pdf` and
 `Jugend-Vorschau.pdf`; see [Config reference](#config-reference).
 
@@ -186,6 +188,7 @@ pause
   | `kader` | `Kader-<Team>.pdf` | `fupa` |
   | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `fupa` |
   | `tabelle-torjaeger` | `Tabelle-Torjaeger-<Team>.pdf` | `bfv` and `fupa` |
+  | `seite` | `Seite-<Team>.pdf` | `fupa` |
   | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `fupa` |
 
   The matchdays are named `Spielplan-…`, the name the Stadionzeitung's
@@ -197,7 +200,7 @@ pause
 
   | PDF | File | Content |
   | --- | --- | --- |
-  | `seite` | `Seite-<Team>-Gast.pdf` | the whole guest page: name as headline, team photo with credit, coaches, squad by position, top scorers |
+  | `seite` | `Seite-<Team>-Gast.pdf` | the guest's whole page, like a team's `seite` |
   | `kader` | `Kader-<Team>-Gast.pdf` | coaches and squad only |
   | `torjaeger` | `Torjaeger-<Team>-Gast.pdf` | top scorers only |
 
@@ -205,6 +208,9 @@ pause
   above the name ("Unser heutiger Gast im …:") belongs in the layout, and
   so does the referee section: `schiedsrichter` is its own PDF, as FuPa
   often knows the referee only shortly before the match.
+- `name`: the headline of the team's `seite`, e.g. `FC Sturm Hauzenberg II`.
+  Without it, the team's name on BFV is used ("FC Sturm Hauzenberg 2");
+  FuPa names all of a club's teams alike.
 - `top`: how many scorers the scorer lists show (default
   3); anyone tied with the last is listed too, as the programme does.
 - `roles`, `allPlayers`: for the team's `kader`, see [FuPa](#fupa).
@@ -250,9 +256,11 @@ with the suffix; update it each summer.
   it all are listed. A guest's Kader always lists all players and only the
   coaches.
 - `torjaeger` reads the goals from FuPa when the team has `fupa`.
-- `seite` uses the team photo from the opponent's FuPa page, at
-  1920×1080 pixels (about 300 dpi across the page), with the
-  photographer's credit below it. Without a photo the page has none.
+- `seite` puts the team's name as headline above its team photo from
+  FuPa, at 1920×1080 pixels (about 300 dpi across the page) with the
+  photographer's credit, then its staff (`roles`), squad by position and
+  top scorers. Without a photo the page has none. For the guest, see
+  `gast` above.
 - `liga-torjaeger` (and the scorers in `tabelle-torjaeger`) lists the top
   scorers of the team's league, e.g.
   "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".

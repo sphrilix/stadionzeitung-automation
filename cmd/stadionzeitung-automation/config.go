@@ -45,6 +45,9 @@ type config struct {
 type teamConfig struct {
 	// BFV is the team's bfv.de page; it also gives the team's league.
 	BFV string `json:"bfv"`
+	// Name is the headline of the team's page (seite); empty means the
+	// team's name on BFV.
+	Name string `json:"name"`
 	// FuPa is the team's fupa.net page or slug. Only set it with FuPa's
 	// permission.
 	FuPa string `json:"fupa"`
@@ -94,6 +97,8 @@ type entry struct {
 	// AllPlayers lists every player in a kader, not only those with a
 	// shirt number.
 	AllPlayers bool
+	// Title is the headline of a team page; empty means the team's name.
+	Title string
 
 	// matchday overrides the current matchday (command line only).
 	matchday int
@@ -110,25 +115,23 @@ const (
 	kindLeagueTop = "liga-torjaeger"
 	kindReferee   = "schiedsrichter"
 	kindTableTop  = "tabelle-torjaeger"
-	kindGuestPage = "seite"
+	kindTeamPage  = "seite"
 
 	defaultTop  = 3
 	defaultDays = 7
 )
 
 var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext,
-	kindSquad, kindLeagueTop, kindReferee, kindTableTop, kindGuestPage}
+	kindSquad, kindLeagueTop, kindReferee, kindTableTop, kindTeamPage}
 
 // teamKinds are the kinds about one team rather than a league, clubKinds
 // those about all teams of a club, fupaKinds those only FuPa has data for.
 var (
 	teamKinds = []string{kindSeason, kindScorers}
 	clubKinds = []string{kindYouthDone, kindYouthNext}
-	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee, kindGuestPage}
-	// gastKinds can be written for a team's next opponent; gastOnly only
-	// for it.
-	gastKinds = []string{kindSquad, kindScorers, kindGuestPage}
-	gastOnly  = []string{kindGuestPage}
+	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee, kindTeamPage}
+	// gastKinds can be written for a team's next opponent.
+	gastKinds = []string{kindSquad, kindScorers, kindTeamPage}
 )
 
 // filePrefix names each kind's PDFs: <prefix>-<team>.pdf. The matchdays
@@ -144,7 +147,7 @@ var filePrefix = map[string]string{
 	kindYouthDone: "Jugend-Ergebnisse",
 	kindYouthNext: "Jugend-Vorschau",
 	kindTableTop:  "Tabelle-Torjaeger",
-	kindGuestPage: "Seite",
+	kindTeamPage:  "Seite",
 }
 
 // youthKinds maps the config's jugend entries to their kinds.
@@ -229,19 +232,19 @@ func (c *config) expand() error {
 			if gast && !slices.Contains(gastKinds, kind) {
 				return fmt.Errorf("team %s: gast: %q is not available for the opponent (want one of %s)", name, kind, strings.Join(gastKinds, ", "))
 			}
-			if !gast && (!slices.Contains(kinds, kind) || slices.Contains(clubKinds, kind) || slices.Contains(gastOnly, kind)) {
+			if !gast && (!slices.Contains(kinds, kind) || slices.Contains(clubKinds, kind)) {
 				return fmt.Errorf("team %s: unknown pdf %q (want one of %s)", name, kind, strings.Join(teamPDFs(), ", "))
 			}
 			e := entry{
 				File: filePrefix[kind] + "-" + name + ".pdf",
 				Kind: kind, Team: tc.BFV, FuPa: tc.FuPa, Top: tc.Top,
-				Roles: tc.Roles, AllPlayers: tc.AllPlayers,
+				Roles: tc.Roles, AllPlayers: tc.AllPlayers, Title: tc.Name,
 			}
 			if gast {
 				// Guests often number only part of their squad, and the
 				// guest page lists their coaches only.
 				e.File = filePrefix[kind] + "-" + name + "-Gast.pdf"
-				e.Opponent, e.AllPlayers, e.Roles, e.coachesOnly = true, true, nil, true
+				e.Opponent, e.AllPlayers, e.Roles, e.coachesOnly, e.Title = true, true, nil, true, ""
 			}
 			if slices.ContainsFunc(c.entries, func(o entry) bool { return o.File == e.File }) {
 				return fmt.Errorf("team %s: %s is listed twice", name, kind)
@@ -284,7 +287,7 @@ func (c *config) expand() error {
 func teamPDFs() []string {
 	var out []string
 	for _, k := range kinds {
-		if !slices.Contains(clubKinds, k) && !slices.Contains(gastOnly, k) {
+		if !slices.Contains(clubKinds, k) {
 			out = append(out, k)
 		}
 	}

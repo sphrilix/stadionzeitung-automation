@@ -71,20 +71,20 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 		roles = isCoach
 	}
 	rows := squadRows(squad, roles, t.AllPlayers)
-	if t.Kind == kindGuestPage {
+	if t.Kind == kindTeamPage {
 		if lines := squadScorerLines(squad, top); len(lines) > 0 {
 			rows = append(rows, render.Row{Label: "Torjäger:", Text: strings.Join(lines, "\n"), Gap: true})
 		}
-		g := render.GuestPage{Name: tm.Name, Rows: rows}
+		g := render.TeamPage{Name: cmp.Or(t.Title, tm.Name), Rows: rows}
 		// Without a photo the page is still useful; the layout shows a gap.
 		if photo, err := c.TeamPhoto(ctx, squad); err == nil {
 			g.Photo, g.PhotoCredit = photo, squad.PhotoCredit
 		}
 		return output{
-			label: "Gastseite " + tm.Name,
-			name:  tm.Name + "-gastseite",
+			label: "Seite " + g.Name,
+			name:  g.Name + "-seite",
 			render: func(out io.Writer, fonts render.Fonts) error {
-				return render.RenderGuestPage(out, g, fonts)
+				return render.RenderTeamPage(out, g, fonts)
 			},
 		}, nil
 	}

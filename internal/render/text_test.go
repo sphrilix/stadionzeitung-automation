@@ -56,12 +56,12 @@ func pageHeight(t *testing.T, pdf []byte) float64 {
 	return h
 }
 
-func TestRenderGuestPage(t *testing.T) {
+func TestRenderTeamPage(t *testing.T) {
 	var photo bytes.Buffer
 	if err := jpeg.Encode(&photo, image.NewGray(image.Rect(0, 0, 160, 90)), nil); err != nil {
 		t.Fatal(err)
 	}
-	g := GuestPage{
+	g := TeamPage{
 		Name:  "SC Luhe-Wildenau",
 		Photo: photo.Bytes(), PhotoCredit: "Robert Geisler",
 		Rows: []Row{
@@ -70,7 +70,7 @@ func TestRenderGuestPage(t *testing.T) {
 		},
 	}
 	var with, without bytes.Buffer
-	if err := RenderGuestPage(&with, g, Fonts{}); err != nil {
+	if err := RenderTeamPage(&with, g, Fonts{}); err != nil {
 		t.Fatal(err)
 	}
 	if n := bytes.Count(with.Bytes(), []byte("/Subtype /Image")); n != 1 {
@@ -78,7 +78,7 @@ func TestRenderGuestPage(t *testing.T) {
 	}
 	// A broken download leaves the photo out instead of failing the page.
 	g.Photo = []byte("not a jpeg")
-	if err := RenderGuestPage(&without, g, Fonts{}); err != nil {
+	if err := RenderTeamPage(&without, g, Fonts{}); err != nil {
 		t.Fatal(err)
 	}
 	if bytes.Contains(without.Bytes(), []byte("/Subtype /Image")) {

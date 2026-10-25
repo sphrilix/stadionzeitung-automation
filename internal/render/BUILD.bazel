@@ -5,7 +5,7 @@ go_library(
     srcs = [
         "block.go",
         "club.go",
-        "guest.go",
+        "page.go",
         "pdf.go",
         "scorers.go",
         "season.go",

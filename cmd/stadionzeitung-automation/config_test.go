@@ -81,7 +81,7 @@ func TestLoadConfigErrors(t *testing.T) {
 		{"jugend: [ergebnisse]\n", `jugend: ergebnisse: needs a club`},
 		{"club: x\njugend: [resultate]\n", `unknown pdf "resultate"`},
 		{"outDir: x\n", `no PDFs configured`},
-		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    fupa: x-m1\n    pdfs: [seite]\n", `unknown pdf "seite"`},
+		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [seite]\n", `team H1: seite: needs a fupa team`},
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
 		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    gast: [seite]\n", `seite: needs a fupa team`},
@@ -99,16 +99,23 @@ func TestLoadConfigCombinedPages(t *testing.T) {
   H1:
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
     fupa: fc-sturm-hauzenberg-m1
-    pdfs: [tabelle-torjaeger]
+    name: FC Sturm Hauzenberg I
+    roles: [Trainer]
+    pdfs: [tabelle-torjaeger, seite]
     gast: [seite]
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.entries) != 2 || c.entries[0].File != "Tabelle-Torjaeger-H1.pdf" || c.entries[1].File != "Seite-H1-Gast.pdf" {
+	if len(c.entries) != 3 || c.entries[0].File != "Tabelle-Torjaeger-H1.pdf" || c.entries[1].File != "Seite-H1.pdf" || c.entries[2].File != "Seite-H1-Gast.pdf" {
 		t.Fatalf("entries = %+v", c.entries)
 	}
-	if g := c.entries[1]; !g.Opponent || !g.coachesOnly || !g.AllPlayers {
+	// The team's own page has its headline and staff roles.
+	if p := c.entries[1]; p.Opponent || p.Title != "FC Sturm Hauzenberg I" || len(p.Roles) != 1 || p.coachesOnly {
+		t.Errorf("team page = %+v", p)
+	}
+	// The guest's is headed by the guest's name and lists its coaches.
+	if g := c.entries[2]; !g.Opponent || !g.coachesOnly || !g.AllPlayers || g.Title != "" || g.Roles != nil {
 		t.Errorf("guest page = %+v, want the opponent with all players and its coaches", g)
 	}
 }
@@ -123,7 +130,7 @@ func TestExampleConfigLoads(t *testing.T) {
 	for _, e := range c.entries {
 		files[e.File] = true
 	}
-	for _, f := range []string{"Spielplan-H1.pdf", "Tabelle-Torjaeger-H1.pdf", "Seite-H1-Gast.pdf", "Saisonspielplan-H3.pdf", "Jugend-Vorschau.pdf"} {
+	for _, f := range []string{"Spielplan-H1.pdf", "Tabelle-Torjaeger-H1.pdf", "Seite-H1-Gast.pdf", "Seite-H2.pdf", "Saisonspielplan-H3.pdf", "Jugend-Vorschau.pdf"} {
 		if !files[f] {
 			t.Errorf("example writes no %s; want the club's full setup", f)
 		}
