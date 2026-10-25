@@ -13,6 +13,7 @@ go_library(
         "//internal/bfv",
         "//internal/fupa",
         "//internal/render",
+        "@io_k8s_sigs_yaml//:yaml",
     ],
 )
 
@@ -29,6 +30,7 @@ go_test(
         "config_test.go",
         "fupa_test.go",
     ],
+    data = ["//:stadionzeitung.example.yaml"],
     embed = [":stadionzeitung-automation_lib"],
     deps = ["//internal/fupa"],
 )

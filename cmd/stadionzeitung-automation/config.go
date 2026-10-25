@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,11 +9,14 @@ import (
 	"slices"
 	"strings"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/sphrilix/stadionzeitung-automation/internal/render"
 )
 
 // config describes a batch of PDFs, typically the ones a newspaper layout
 // links to. Relative paths are resolved against the config file's directory.
+// The file is YAML; as YAML includes JSON, JSON configs work too.
 type config struct {
 	// OutDir is where the PDFs are written, e.g. the folder the InDesign
 	// document links its placed files from.
@@ -122,7 +124,8 @@ func loadConfig(path string) (config, error) {
 	if err != nil {
 		return c, err
 	}
-	if err := json.Unmarshal(b, &c); err != nil {
+	// Strict, so a misspelt key is reported instead of silently ignored.
+	if err := yaml.UnmarshalStrict(b, &c); err != nil {
 		return c, fmt.Errorf("%s: %w", path, err)
 	}
 	if len(c.Teams) == 0 {
