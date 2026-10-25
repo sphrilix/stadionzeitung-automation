@@ -139,3 +139,26 @@ func TestLeagueScorers(t *testing.T) {
 		t.Errorf("LeagueScorers = %+v", s)
 	}
 }
+
+func TestTeamPhoto(t *testing.T) {
+	c := serve(t, map[string]string{
+		"/teams/luhe-m1-2026-27/squad": `{"players":[],"coaches":[],"info":{"teamImage":{"path":"https://image.fupa.net/team-image/abc/","source":" Robert Geisler "}}}`,
+		"/team-image/abc/" + photoSize:  "JPEGDATA",
+	})
+	s, err := c.Squad(context.Background(), "luhe-m1-2026-27")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Photo != "https://image.fupa.net/team-image/abc/" || s.PhotoCredit != "Robert Geisler" {
+		t.Errorf("Photo, PhotoCredit = %q, %q", s.Photo, s.PhotoCredit)
+	}
+	// The photo is fetched from the address FuPa gives, here the test server.
+	s.Photo = c.Base + "/team-image/abc/"
+	b, err := c.TeamPhoto(context.Background(), s)
+	if err != nil || string(b) != "JPEGDATA" {
+		t.Errorf("TeamPhoto = %q, %v", b, err)
+	}
+	if _, err := c.TeamPhoto(context.Background(), Squad{}); err == nil {
+		t.Error("expected an error without a photo")
+	}
+}

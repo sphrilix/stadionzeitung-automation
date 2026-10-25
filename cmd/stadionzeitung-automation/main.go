@@ -146,8 +146,10 @@ func build(t entry, c *bfv.Client) (output, error) {
 		return buildSeason(ctx, c, t)
 	case kindYouthDone, kindYouthNext:
 		return buildYouth(ctx, c, t)
-	case kindSquad, kindLeagueTop, kindReferee:
+	case kindSquad, kindLeagueTop, kindReferee, kindGuestPage:
 		return buildFuPa(ctx, fupa.NewClient(), t)
+	case kindTableTop:
+		return buildTableScorers(ctx, c, fupa.NewClient(), t)
 	case kindScorers:
 		if t.FuPa != "" {
 			return buildFuPa(ctx, fupa.NewClient(), t)
@@ -195,14 +197,29 @@ func buildMatchdays(ctx context.Context, c *bfv.Client, t entry) (output, error)
 }
 
 func buildTable(ctx context.Context, c *bfv.Client, t entry) (output, error) {
-	// The team's own row is set in bold.
-	compoundID, _, highlight, err := league(ctx, c, t)
+	tbl, opts, err := fetchTable(ctx, c, t)
 	if err != nil {
 		return output{}, err
 	}
+	return output{
+		label: "Tabelle",
+		name:  tbl.League + "-tabelle",
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.RenderTable(out, tbl, fonts, opts)
+		},
+	}, nil
+}
+
+// fetchTable loads the table of an entry's league with the clubs' logos,
+// the entry's team set in bold.
+func fetchTable(ctx context.Context, c *bfv.Client, t entry) (bfv.Table, render.TableOptions, error) {
+	compoundID, _, highlight, err := league(ctx, c, t)
+	if err != nil {
+		return bfv.Table{}, render.TableOptions{}, err
+	}
 	tbl, err := c.FetchTable(ctx, compoundID)
 	if err != nil {
-		return output{}, err
+		return bfv.Table{}, render.TableOptions{}, err
 	}
 	// A missing logo only leaves its cell empty.
 	logos := map[string][]byte{}
@@ -214,11 +231,25 @@ func buildTable(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 			logos[r.ClubID] = b
 		}
 	}
+	return tbl, render.TableOptions{Logos: logos, Highlight: highlight}, nil
+}
+
+// buildTableScorers builds the table with the league's top scorers from
+// FuPa below it, as the table pages show them.
+func buildTableScorers(ctx context.Context, c *bfv.Client, fc *fupa.Client, t entry) (output, error) {
+	tbl, opts, err := fetchTable(ctx, c, t)
+	if err != nil {
+		return output{}, err
+	}
+	scorers, err := leagueScorerLines(ctx, fc, t)
+	if err != nil {
+		return output{}, err
+	}
 	return output{
-		label: "Tabelle",
-		name:  tbl.League + "-tabelle",
+		label: "Tabelle und Torjäger",
+		name:  tbl.League + "-tabelle-torjaeger",
 		render: func(out io.Writer, fonts render.Fonts) error {
-			return render.RenderTable(out, tbl, fonts, render.TableOptions{Logos: logos, Highlight: highlight})
+			return render.RenderTableScorers(out, tbl, opts, scorers, fonts)
 		},
 	}, nil
 }

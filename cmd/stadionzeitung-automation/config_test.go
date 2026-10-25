@@ -81,6 +81,10 @@ func TestLoadConfigErrors(t *testing.T) {
 		{"jugend: [ergebnisse]\n", `jugend: ergebnisse: needs a club`},
 		{"club: x\njugend: [resultate]\n", `unknown pdf "resultate"`},
 		{"outDir: x\n", `no PDFs configured`},
+		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    fupa: x-m1\n    pdfs: [seite]\n", `unknown pdf "seite"`},
+		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
+		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
+		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    gast: [seite]\n", `seite: needs a fupa team`},
 		{"teams:\n  - file: Tabelle-H1.pdf\n    kind: tabelle\n", `the old format`},
 	} {
 		_, err := loadConfig(writeConfig(t, tc.yaml))
@@ -90,14 +94,39 @@ func TestLoadConfigErrors(t *testing.T) {
 	}
 }
 
+func TestLoadConfigCombinedPages(t *testing.T) {
+	c, err := loadConfig(writeConfig(t, `teams:
+  H1:
+    bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
+    fupa: fc-sturm-hauzenberg-m1
+    pdfs: [tabelle-torjaeger]
+    gast: [seite]
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.entries) != 2 || c.entries[0].File != "Tabelle-Torjaeger-H1.pdf" || c.entries[1].File != "Seite-H1-Gast.pdf" {
+		t.Fatalf("entries = %+v", c.entries)
+	}
+	if g := c.entries[1]; !g.Opponent || !g.coachesOnly || !g.AllPlayers {
+		t.Errorf("guest page = %+v, want the opponent with all players and its coaches", g)
+	}
+}
+
 // The shipped example is the club's full setup; it must stay loadable.
 func TestExampleConfigLoads(t *testing.T) {
 	c, err := loadConfig("../../stadionzeitung.example.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.entries) < 20 {
-		t.Errorf("example has %d PDFs, want the full setup", len(c.entries))
+	files := map[string]bool{}
+	for _, e := range c.entries {
+		files[e.File] = true
+	}
+	for _, f := range []string{"Spielplan-H1.pdf", "Tabelle-Torjaeger-H1.pdf", "Seite-H1-Gast.pdf", "Saisonspielplan-H3.pdf", "Jugend-Vorschau.pdf"} {
+		if !files[f] {
+			t.Errorf("example writes no %s; want the club's full setup", f)
+		}
 	}
 	if c.Fonts.Regular == "" || c.Fonts.Bold == "" {
 		t.Errorf("fonts = %+v, want both set", c.Fonts)

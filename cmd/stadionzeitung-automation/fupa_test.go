@@ -34,3 +34,14 @@ func TestSquadRows(t *testing.T) {
 		t.Errorf("squadRows(Trainer, all) =\n%s\nwant\n%s", got, want)
 	}
 }
+
+func TestIsCoach(t *testing.T) {
+	for role, want := range map[string]bool{
+		"Trainer": true, "Co-Trainer": true, "Spielertrainer": true, "spielender Co-Trainer": true,
+		"Torwart-Trainer": true, "Betreuer": false, "Sportdirektor": false, "Masseur": false,
+	} {
+		if got := isCoach(role); got != want {
+			t.Errorf("isCoach(%q) = %v, want %v", role, got, want)
+		}
+	}
+}

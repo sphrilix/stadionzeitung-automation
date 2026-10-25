@@ -41,6 +41,8 @@ inventory, including what stays manual.
 | `jugend-vorschau` | the youth teams' upcoming matches | Jugend (23) | BFV |
 | `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa |
 | `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa |
+| `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV and FuPa |
+| `seite` | the whole guest page in one PDF: the opponent's name, team photo, coaches, squad and top scorers | Gastmannschaft (5) | FuPa |
 | `schiedsrichter` | the referee of the next league match and their club | Grußwort (3), guest (5) | FuPa |
 
 The FuPa kinds need FuPa's written permission, see [FuPa](#fupa).
@@ -83,14 +85,14 @@ teams:
   H1:
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
-    pdfs: [spieltage, tabelle, spielplan, torjaeger, kader, liga-torjaeger, schiedsrichter]
-    gast: [kader, torjaeger]
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader, schiedsrichter]
+    gast: [seite]
   H2:
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
     pdfs: [spieltage, tabelle]
 ```
 
-That writes `Spielplan-H1.pdf`, `Tabelle-H1.pdf`, …, `Kader-H1-Gast.pdf`,
+That writes `Spielplan-H1.pdf`, `Tabelle-Torjaeger-H1.pdf`, …, `Seite-H1-Gast.pdf`,
 `Spielplan-H2.pdf`, `Tabelle-H2.pdf`, `Jugend-Ergebnisse.pdf` and
 `Jugend-Vorschau.pdf`; see [Config reference](#config-reference).
 
@@ -183,17 +185,27 @@ pause
   | `torjaeger` | `Torjaeger-<Team>.pdf` | `bfv` or `fupa` |
   | `kader` | `Kader-<Team>.pdf` | `fupa` |
   | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `fupa` |
+  | `tabelle-torjaeger` | `Tabelle-Torjaeger-<Team>.pdf` | `bfv` and `fupa` |
   | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `fupa` |
 
   The matchdays are named `Spielplan-…`, the name the Stadionzeitung's
   layout has always linked them by; the season schedule is
   `Saisonspielplan-…`.
-- `gast`: `kader` and/or `torjaeger` for the team's next league opponent
-  (the first league match today or later), written as
-  `Kader-<Team>-Gast.pdf` and `Torjaeger-<Team>-Gast.pdf`. Generated before
-  a home game, that is the guest. The guest's Kader lists all its players
-  and only its coaches.
-- `top`: how many scorers `torjaeger` and `liga-torjaeger` list (default
+- `gast`: PDFs for the team's next league opponent (the first league match
+  today or later); generated before a home game, that is the guest. All
+  need `fupa` except `torjaeger`:
+
+  | PDF | File | Content |
+  | --- | --- | --- |
+  | `seite` | `Seite-<Team>-Gast.pdf` | the whole guest page: name as headline, team photo with credit, coaches, squad by position, top scorers |
+  | `kader` | `Kader-<Team>-Gast.pdf` | coaches and squad only |
+  | `torjaeger` | `Torjaeger-<Team>-Gast.pdf` | top scorers only |
+
+  The guest's Kader lists all its players and only its coaches. The line
+  above the name ("Unser heutiger Gast im …:") belongs in the layout, and
+  so does the referee section: `schiedsrichter` is its own PDF, as FuPa
+  often knows the referee only shortly before the match.
+- `top`: how many scorers the scorer lists show (default
   3); anyone tied with the last is listed too, as the programme does.
 - `roles`, `allPlayers`: for the team's `kader`, see [FuPa](#fupa).
 
@@ -219,8 +231,9 @@ scorers or referees, and some clubs keep their squad private there.
 > downloading or reusing its data without FuPa's prior written consent.
 > Only add `fupa` to a team once you have it. The tool contacts FuPa only
 > for teams with `fupa` and identifies itself in its requests. Without
-> `fupa`, leave `kader`, `liga-torjaeger` and `schiedsrichter` out of the
-> team's `pdfs` and `kader` out of its `gast`.
+> `fupa`, leave `kader`, `liga-torjaeger`, `tabelle-torjaeger` and
+> `schiedsrichter` out of the team's `pdfs` (use `tabelle` instead), and
+> `seite` and `kader` out of its `gast`.
 
 `fupa` is the team's FuPa page, e.g.
 `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`, or just
@@ -237,7 +250,11 @@ with the suffix; update it each summer.
   it all are listed. A guest's Kader always lists all players and only the
   coaches.
 - `torjaeger` reads the goals from FuPa when the team has `fupa`.
-- `liga-torjaeger` lists the top scorers of the team's league, e.g.
+- `seite` uses the team photo from the opponent's FuPa page, at
+  1920×1080 pixels (about 300 dpi across the page), with the
+  photographer's credit below it. Without a photo the page has none.
+- `liga-torjaeger` (and the scorers in `tabelle-torjaeger`) lists the top
+  scorers of the team's league, e.g.
   "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".
 - `schiedsrichter` gives the referee and their club, e.g. "Marijo Kraljic
   (SC Wörnsmühl)". FuPa lists the referee only, not the assistants, and

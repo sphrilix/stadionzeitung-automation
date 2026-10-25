@@ -3,7 +3,9 @@ load("@rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "render",
     srcs = [
+        "block.go",
         "club.go",
+        "guest.go",
         "pdf.go",
         "scorers.go",
         "season.go",

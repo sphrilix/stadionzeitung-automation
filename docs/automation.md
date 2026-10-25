@@ -32,6 +32,8 @@ Data sources used:
 | 5 | Torjäger of a guest with a private BFV squad | `torjaeger` + `fupa` | FuPa squad | #7 |
 | 13, 29 | Top-Torjäger of the league | `liga-torjaeger` | FuPa `/competitions/{slug}/seasons/current/scorers` | #7 |
 | 3, 5 | Referee | `schiedsrichter` | FuPa `/matches/{slug}` | #7 |
+| 5 | The whole guest page (name, team photo, coaches, squad, scorers) in one PDF | `gast: [seite]` | FuPa squad and team photo | |
+| 13, 29 | Table and Top-Torjäger in one PDF | `tabelle-torjaeger` | BFV table + FuPa scorers | |
 
 Limits:
 
@@ -53,7 +55,7 @@ Data that is available but not generated yet:
 | --- | --- | --- | --- |
 | 1 | Cover: league, matchday, opponent, date and kickoff | small text PDF (or text file for InDesign data merge) for the next home match | widget team matches + matchday pages |
 | 3 | Grußwort facts: "zum 8. Heimspiel", last result, table position and gap of each team | a fact sheet for whoever writes the Grußwort, not the text itself | team matches + table |
-| 8, 9 | Kader photo pages with shirt numbers | photos and numbers exist on FuPa and BFV (with photographer credit) | FuPa / widget squad |
+| 8, 9 | Kader photo pages with shirt numbers | player photos and numbers exist on FuPa and BFV (with photographer credit) | FuPa / widget squad |
 
 ## Not automatable
 

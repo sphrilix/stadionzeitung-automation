@@ -27,24 +27,28 @@ jugend: [ergebnisse, vorschau]
 #   spielplan  season schedule                       Saisonspielplan-<Team>.pdf
 #   torjaeger  top scorers (from FuPa if set)        Torjaeger-<Team>.pdf
 # and from FuPa, only with FuPa's written permission (see the README):
-#   kader           squad with coaches and staff     Kader-<Team>.pdf
-#   liga-torjaeger  top scorers of the league        Liga-Torjaeger-<Team>.pdf
-#   schiedsrichter  referee of the next match        Schiedsrichter-<Team>.pdf
-# gast: the same for the next league opponent (kader, torjaeger), for the
-# guest page (S. 5).
+#   kader              squad with coaches and staff  Kader-<Team>.pdf
+#   liga-torjaeger     top scorers of the league     Liga-Torjaeger-<Team>.pdf
+#   tabelle-torjaeger  table with the league's top   Tabelle-Torjaeger-<Team>.pdf
+#                      scorers below (S. 13, 29)
+#   schiedsrichter     referee of the next match     Schiedsrichter-<Team>.pdf
+# gast: for the next league opponent, i.e. the guest (S. 5):
+#   seite      the whole guest page: name, team photo, coaches, squad and
+#              top scorers                           Seite-<Team>-Gast.pdf
+#   kader, torjaeger  as above, separately           Kader-<Team>-Gast.pdf, …
 
 teams:
   H1:                                 # 1. Mannschaft, Landesliga Mitte
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
-    pdfs: [spieltage, tabelle, spielplan, torjaeger, kader, liga-torjaeger, schiedsrichter]
-    gast: [kader, torjaeger]
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader, schiedsrichter]
+    gast: [seite]
     roles: [Trainer, Torwart-Trainer, Fitnesstrainer, Betreuer]
 
   H2:                                 # 2. Mannschaft, Kreisliga Passauer Land
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m2
-    pdfs: [spieltage, tabelle, spielplan, torjaeger, kader, liga-torjaeger]
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader]
     roles: [Trainer, Torwart-Trainer, Physiotherapeut]
 
   H3:                                 # SG Haag I / Hauzenberg III, A-Klasse

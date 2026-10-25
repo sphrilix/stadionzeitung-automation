@@ -44,30 +44,7 @@ func Goals(n int) string {
 // RenderLines writes a single-page PDF with one line of text each; the page
 // is as wide as the longest line.
 func RenderLines(w io.Writer, lines []string, fonts Fonts) error {
-	// Measure with a throwaway page, as fpdf needs one to load the font.
-	probe, err := newPage(10, 10, fonts)
-	if err != nil {
-		return err
-	}
-	probe.SetFont(fontFamily, "", textFontSize)
-	width := 0.0
-	for _, l := range lines {
-		width = max(width, probe.GetStringWidth(l))
-	}
-	// Keep a page without lines (e.g. no goals yet), so the link stays valid.
-	rows := max(1, len(lines))
-
-	pdf, err := newPage(width+2*edge, float64(rows)*textLine+2*edge, fonts)
-	if err != nil {
-		return err
-	}
-	pdf.SetFont(fontFamily, "", textFontSize)
-	pdf.SetCellMargin(0)
-	for i, l := range lines {
-		pdf.SetXY(edge, edge+float64(i)*textLine)
-		pdf.CellFormat(width, textLine, l, "", 0, "L", false, 0, "")
-	}
-	return output(w, pdf)
+	return renderBlocks(w, fonts, linesBlock(lines))
 }
 
 // Row is a labelled entry of RenderRows, e.g. "Abwehr:" and its players.
@@ -87,49 +64,7 @@ const (
 // as the longest label and their text next to it, wrapped to the page
 // width, as the Kader pages are set.
 func RenderRows(w io.Writer, rows []Row, fonts Fonts) error {
-	probe, err := newPage(10, 10, fonts)
-	if err != nil {
-		return err
-	}
-	probe.SetCellMargin(0)
-	probe.SetFont(fontFamily, "B", textFontSize)
-	labelWidth := 0.0
-	for _, r := range rows {
-		labelWidth = max(labelWidth, probe.GetStringWidth(r.Label)+labelPad)
-	}
-	textWidth := rowsWidth - labelWidth
-	probe.SetFont(fontFamily, "", textFontSize)
-	wrapped := make([][]string, len(rows))
-	height := 2 * edge
-	for i, r := range rows {
-		wrapped[i] = wrap(probe.SplitText(r.Text, textWidth))
-		if r.Gap && i > 0 {
-			height += rowGap
-		}
-		height += float64(len(wrapped[i])) * textLine
-	}
-
-	pdf, err := newPage(rowsWidth+2*edge, height, fonts)
-	if err != nil {
-		return err
-	}
-	pdf.SetCellMargin(0)
-	y := edge
-	for i, r := range rows {
-		if r.Gap && i > 0 {
-			y += rowGap
-		}
-		pdf.SetFont(fontFamily, "B", textFontSize)
-		pdf.SetXY(edge, y)
-		pdf.CellFormat(labelWidth, textLine, r.Label, "", 0, "L", false, 0, "")
-		pdf.SetFont(fontFamily, "", textFontSize)
-		for _, line := range wrapped[i] {
-			pdf.SetXY(edge+labelWidth, y)
-			pdf.CellFormat(textWidth, textLine, line, "", 0, "L", false, 0, "")
-			y += textLine
-		}
-	}
-	return output(w, pdf)
+	return renderBlocks(w, fonts, rowsBlock(rows))
 }
 
 // wrap keeps an empty text as one empty line, so its label still shows.

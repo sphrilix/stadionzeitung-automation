@@ -109,22 +109,26 @@ const (
 	kindSquad     = "kader"
 	kindLeagueTop = "liga-torjaeger"
 	kindReferee   = "schiedsrichter"
+	kindTableTop  = "tabelle-torjaeger"
+	kindGuestPage = "seite"
 
 	defaultTop  = 3
 	defaultDays = 7
 )
 
 var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext,
-	kindSquad, kindLeagueTop, kindReferee}
+	kindSquad, kindLeagueTop, kindReferee, kindTableTop, kindGuestPage}
 
 // teamKinds are the kinds about one team rather than a league, clubKinds
 // those about all teams of a club, fupaKinds those only FuPa has data for.
 var (
 	teamKinds = []string{kindSeason, kindScorers}
 	clubKinds = []string{kindYouthDone, kindYouthNext}
-	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee}
-	// gastKinds can be written for a team's next opponent.
-	gastKinds = []string{kindSquad, kindScorers}
+	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee, kindGuestPage}
+	// gastKinds can be written for a team's next opponent; gastOnly only
+	// for it.
+	gastKinds = []string{kindSquad, kindScorers, kindGuestPage}
+	gastOnly  = []string{kindGuestPage}
 )
 
 // filePrefix names each kind's PDFs: <prefix>-<team>.pdf. The matchdays
@@ -139,6 +143,8 @@ var filePrefix = map[string]string{
 	kindReferee:   "Schiedsrichter",
 	kindYouthDone: "Jugend-Ergebnisse",
 	kindYouthNext: "Jugend-Vorschau",
+	kindTableTop:  "Tabelle-Torjaeger",
+	kindGuestPage: "Seite",
 }
 
 // youthKinds maps the config's jugend entries to their kinds.
@@ -154,6 +160,10 @@ func (e entry) validate() error {
 	case slices.Contains(fupaKinds, e.Kind):
 		if e.FuPa == "" {
 			return errors.New("needs a fupa team")
+		}
+	case e.Kind == kindTableTop:
+		if e.FuPa == "" || (e.League == "" && e.Team == "") {
+			return errors.New("needs a bfv team (the table) and a fupa team (the scorers)")
 		}
 	case e.Kind == kindScorers && e.FuPa != "":
 		// FuPa replaces the BFV team.
@@ -219,7 +229,7 @@ func (c *config) expand() error {
 			if gast && !slices.Contains(gastKinds, kind) {
 				return fmt.Errorf("team %s: gast: %q is not available for the opponent (want one of %s)", name, kind, strings.Join(gastKinds, ", "))
 			}
-			if !gast && (!slices.Contains(kinds, kind) || slices.Contains(clubKinds, kind)) {
+			if !gast && (!slices.Contains(kinds, kind) || slices.Contains(clubKinds, kind) || slices.Contains(gastOnly, kind)) {
 				return fmt.Errorf("team %s: unknown pdf %q (want one of %s)", name, kind, strings.Join(teamPDFs(), ", "))
 			}
 			e := entry{
@@ -274,7 +284,7 @@ func (c *config) expand() error {
 func teamPDFs() []string {
 	var out []string
 	for _, k := range kinds {
-		if !slices.Contains(clubKinds, k) {
+		if !slices.Contains(clubKinds, k) && !slices.Contains(gastOnly, k) {
 			out = append(out, k)
 		}
 	}
