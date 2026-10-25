@@ -2,10 +2,12 @@
 
 [![CI](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml)
 
-Writes a PDF with the previous, current and next matchday ("Spieltag") of any
-BFV league, including results, as boxed tables without a heading (the layout
-it is placed into provides that). The current matchday is the one running today
-(through its last scheduled day) or, between matchdays, the next one.
+Writes PDFs with data of any BFV league, ready to be placed into a layout:
+without a heading (the layout provides that) and with the page cropped to the
+content. By default it writes the previous, current and next matchday
+("Spieltag") including results, as boxed tables. The current matchday is the
+one running today (through its last scheduled day) or, between matchdays, the
+next one.
 
 ```sh
 bfv-miner -o ll.pdf \
@@ -15,9 +17,16 @@ bfv-miner -o ll.pdf \
 The argument is a bfv.de league URL containing the competition id (`…-G`) or
 the bare id. Flags:
 
-- `-o` output file (default `<league>-spieltag-<N>.pdf`)
+- `-o` output file (default named after the league and kind, e.g.
+  `Landesliga-Mitte-spieltag-16.pdf`)
+- `-kind` what to write, see below (default `spieltage`)
 - `-matchday N` centre the window on matchday N instead of the current one
 - `-version` print the version
+
+| Kind | Content |
+| --- | --- |
+| `spieltage` | previous, current and next matchday with results |
+| `tabelle` | current table with club logos, goals, and promotion/relegation zones coloured |
 
 > **Unofficial.** bfv-miner is not affiliated with or endorsed by the
 > Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
@@ -64,7 +73,10 @@ them in one go, so updating the fixtures is: run the tool, update the links.
      the Go font is used.
    - `teams`: one entry per PDF. `file` is the name inside `outDir`, `league`
      the team's league page on bfv.de (open the league under *Ergebnisse*
-     and copy the address; it ends in `…-G`).
+     and copy the address; it ends in `…-G`). `kind` picks the content (see
+     the table above; default `spieltage`). For a `tabelle`, `highlight`
+     sets the rows of teams whose name contains it in bold, e.g.
+     `"Hauzenberg"` for the club's own teams.
 3. **Generate the PDFs once** (see below), so there is something to place.
 4. **Place each PDF in InDesign.** Draw a graphic frame where the table goes,
    then *File → Place* (*Datei → Platzieren*), choose e.g.
@@ -104,8 +116,9 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    the error is printed.
 2. Open the InDesign document. When it asks about modified links, choose
    *Update Links* (*Verknüpfungen aktualisieren*). If it is already open:
-   *Window → Links* (*Fenster → Verknüpfungen*), select the
-   `Spielplan-H*.pdf` entries with the yellow warning sign and click
+   *Window → Links* (*Fenster → Verknüpfungen*), select the generated PDFs
+   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`) with the yellow warning sign
+   and click
    *Update Link* (*Verknüpfung aktualisieren*).
 3. Check the tables, then export or print as usual.
 

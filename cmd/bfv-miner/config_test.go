@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -41,6 +42,19 @@ func TestLoadConfigRejectsIncompleteTeam(t *testing.T) {
 	}
 	if _, err := loadConfig(path); err == nil {
 		t.Error("expected an error for a team without league")
+	}
+}
+
+func TestLoadConfigRejectsUnknownKind(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sz.json")
+	err := os.WriteFile(path, []byte(`{"teams": [
+		{"file": "Tabelle-H1.pdf", "kind": "tabelle", "league": "0307PL23RO000007VS5489BUVT69HBT7-G"},
+		{"file": "x.pdf", "kind": "kaffee", "league": "0307PL23RO000007VS5489BUVT69HBT7-G"}]}`), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadConfig(path); err == nil || !strings.Contains(err.Error(), "team 2") {
+		t.Errorf("err = %v, want an unknown kind error for team 2", err)
 	}
 }
 

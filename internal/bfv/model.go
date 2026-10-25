@@ -13,6 +13,13 @@ type Match struct {
 	HasTime bool
 	Home    string
 	Guest   string
+	// HomeTeamID and GuestTeamID are BFV's permanent team IDs, HomeClubID
+	// and GuestClubID the IDs of the clubs fielding them.
+	HomeTeamID, GuestTeamID string
+	HomeClubID, GuestClubID string
+	// HomeLogoPrivate and GuestLogoPrivate are set when a club does not
+	// allow its logo to be shown.
+	HomeLogoPrivate, GuestLogoPrivate bool
 	// Result is the score as published by BFV, e.g. "0:4"; empty when the
 	// match has not been played.
 	Result string

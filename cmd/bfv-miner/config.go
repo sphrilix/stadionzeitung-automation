@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/sphrilix/stadionzeitung-automation/internal/render"
 )
@@ -27,8 +29,32 @@ type config struct {
 type team struct {
 	// File is the PDF's name inside OutDir, e.g. "Spielplan-H1.pdf".
 	File string `json:"file"`
+	// Kind is what the PDF shows, one of kinds; empty means kindMatchdays.
+	Kind string `json:"kind"`
 	// League is a bfv.de league URL or competition id.
 	League string `json:"league"`
+	// Highlight sets table rows of teams whose name contains it in bold.
+	Highlight string `json:"highlight"`
+
+	// matchday overrides the current matchday (command line only).
+	matchday int
+}
+
+const (
+	kindMatchdays = "spieltage"
+	kindTable     = "tabelle"
+)
+
+var kinds = []string{kindMatchdays, kindTable}
+
+func (t team) validate() error {
+	if t.Kind != "" && !slices.Contains(kinds, t.Kind) {
+		return fmt.Errorf("unknown kind %q (want one of %s)", t.Kind, strings.Join(kinds, ", "))
+	}
+	if t.League == "" {
+		return errors.New("needs a league")
+	}
+	return nil
 }
 
 func loadConfig(path string) (config, error) {
@@ -44,8 +70,11 @@ func loadConfig(path string) (config, error) {
 		return c, fmt.Errorf("%s: no teams configured", path)
 	}
 	for i, t := range c.Teams {
-		if t.File == "" || t.League == "" {
-			return c, fmt.Errorf("%s: team %d needs both file and league", path, i+1)
+		if t.File == "" {
+			return c, fmt.Errorf("%s: team %d needs a file", path, i+1)
+		}
+		if err := t.validate(); err != nil {
+			return c, fmt.Errorf("%s: team %d (%s): %w", path, i+1, t.File, err)
 		}
 	}
 	dir := filepath.Dir(path)

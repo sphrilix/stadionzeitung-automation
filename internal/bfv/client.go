@@ -16,6 +16,7 @@ import (
 const (
 	DefaultBaseWeb    = "https://www.bfv.de"
 	DefaultBaseWidget = "https://widget-prod.bfv.de/api/service/widget/v1"
+	DefaultBaseLogo   = "https://app.bfv.de/export.media/-/action/getLogo/format/7/id/"
 
 	userAgent = "Mozilla/5.0 (X11; Linux x86_64) bfv-miner"
 	// maxParallel bounds concurrent requests against BFV.
@@ -27,13 +28,15 @@ type Client struct {
 	HTTP       *http.Client
 	BaseWeb    string
 	BaseWidget string
+	// BaseLogo is prefixed to a club ID to get its logo.
+	BaseLogo string
 	// Now returns the current time; nil means time.Now.
 	Now func() time.Time
 }
 
 // NewClient returns a Client for the production BFV endpoints.
 func NewClient() *Client {
-	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget}
+	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget, BaseLogo: DefaultBaseLogo}
 }
 
 func (c *Client) get(ctx context.Context, url string) ([]byte, error) {
@@ -108,22 +111,11 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 		})
 	}
 
-	var (
-		mu      sync.Mutex
-		matches = map[string]Match{}
-	)
-	for _, team := range teams {
-		g.Go(func() error {
-			ms, err := c.TeamMatches(gctx, team, compoundID)
-			mu.Lock()
-			defer mu.Unlock()
-			for _, m := range ms {
-				matches[m.ID] = m
-			}
-			return err
-		})
-	}
 	if err := g.Wait(); err != nil {
+		return Window{}, err
+	}
+	matches, err := c.leagueMatches(ctx, compoundID, teams)
+	if err != nil {
 		return Window{}, err
 	}
 
@@ -150,4 +142,28 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 		})
 	}
 	return Window{League: first.LeagueName, Current: current, Days: days}, nil
+}
+
+// leagueMatches collects every match of a competition, byes included, keyed
+// by match ID. BFV has no per-competition list, so it merges the season
+// fixtures of all teams.
+func (c *Client) leagueMatches(ctx context.Context, compoundID string, teams []string) (map[string]Match, error) {
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxParallel)
+	var (
+		mu      sync.Mutex
+		matches = map[string]Match{}
+	)
+	for _, team := range teams {
+		g.Go(func() error {
+			ms, err := c.TeamMatches(gctx, team, compoundID)
+			mu.Lock()
+			defer mu.Unlock()
+			for _, m := range ms {
+				matches[m.ID] = m
+			}
+			return err
+		})
+	}
+	return matches, g.Wait()
 }

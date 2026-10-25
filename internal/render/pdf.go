@@ -1,5 +1,6 @@
-// Package render lays out league matchdays as a PDF meant to be placed into a
-// layout (e.g. an InDesign frame): the page is cropped to the content.
+// Package render lays out league data (matchdays, tables, ...) as PDFs meant
+// to be placed into a layout (e.g. an InDesign frame): each page is cropped
+// to its content.
 package render
 
 import (
@@ -54,18 +55,10 @@ func Render(w io.Writer, days []bfv.Matchday, fonts Fonts) error {
 		height += boxHeight(day)
 	}
 
-	pdf := fpdf.NewCustom(&fpdf.InitType{
-		UnitStr: "mm",
-		Size:    fpdf.SizeType{Wd: boxWidth + 2*edge, Ht: height},
-	})
-	pdf.SetMargins(0, 0, 0)
-	pdf.SetAutoPageBreak(false, 0)
-	pdf.AddUTF8FontFromBytes(fontFamily, "", orDefault(fonts.Regular, goregular.TTF))
-	pdf.AddUTF8FontFromBytes(fontFamily, "B", orDefault(fonts.Bold, gobold.TTF))
-	if err := pdf.Error(); err != nil {
-		return fmt.Errorf("loading fonts: %w", err)
+	pdf, err := newPage(boxWidth+2*edge, height, fonts)
+	if err != nil {
+		return err
 	}
-	pdf.AddPage()
 
 	fontSize := fitFontSize(pdf, days)
 	y := edge
@@ -73,7 +66,28 @@ func Render(w io.Writer, days []bfv.Matchday, fonts Fonts) error {
 		drawMatchday(pdf, edge, y, fontSize, day)
 		y += boxHeight(day) + boxGap
 	}
+	return output(w, pdf)
+}
 
+// newPage starts a single-page PDF of the given size in millimetres with the
+// text fonts loaded.
+func newPage(width, height float64, fonts Fonts) (*fpdf.Fpdf, error) {
+	pdf := fpdf.NewCustom(&fpdf.InitType{
+		UnitStr: "mm",
+		Size:    fpdf.SizeType{Wd: width, Ht: height},
+	})
+	pdf.SetMargins(0, 0, 0)
+	pdf.SetAutoPageBreak(false, 0)
+	pdf.AddUTF8FontFromBytes(fontFamily, "", orDefault(fonts.Regular, goregular.TTF))
+	pdf.AddUTF8FontFromBytes(fontFamily, "B", orDefault(fonts.Bold, gobold.TTF))
+	if err := pdf.Error(); err != nil {
+		return nil, fmt.Errorf("loading fonts: %w", err)
+	}
+	pdf.AddPage()
+	return pdf, nil
+}
+
+func output(w io.Writer, pdf *fpdf.Fpdf) error {
 	if err := pdf.Error(); err != nil {
 		return err
 	}
@@ -127,15 +141,25 @@ func drawMatchday(pdf *fpdf.Fpdf, x, y, fontSize float64, day bfv.Matchday) {
 // fitFontSize returns the largest font size up to teamFontSize at which every
 // team name fits its column.
 func fitFontSize(pdf *fpdf.Fpdf, days []bfv.Matchday) float64 {
-	pdf.SetFont(fontFamily, "", teamFontSize)
-	widest := 0.0
+	var names []string
 	for _, day := range days {
 		for _, m := range day.Matches {
-			widest = max(widest, pdf.GetStringWidth(m.Home), pdf.GetStringWidth(m.Guest))
+			names = append(names, m.Home, m.Guest)
 		}
 	}
+	return fitTexts(pdf, "", colTeam, names)
+}
+
+// fitTexts returns the largest font size up to teamFontSize at which every
+// text, set in style, fits a column of the given width.
+func fitTexts(pdf *fpdf.Fpdf, style string, width float64, texts []string) float64 {
+	pdf.SetFont(fontFamily, style, teamFontSize)
+	widest := 0.0
+	for _, t := range texts {
+		widest = max(widest, pdf.GetStringWidth(t))
+	}
 	// Leave room for the cell margin fpdf adds on the aligned side.
-	avail := colTeam - 2*pdf.GetCellMargin()
+	avail := width - 2*pdf.GetCellMargin()
 	if widest <= avail {
 		return teamFontSize
 	}

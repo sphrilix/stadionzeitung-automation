@@ -2,7 +2,10 @@ load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "render",
-    srcs = ["pdf.go"],
+    srcs = [
+        "pdf.go",
+        "table.go",
+    ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/internal/render",
     visibility = ["//:__subpackages__"],
     deps = [
@@ -15,7 +18,10 @@ go_library(
 
 go_test(
     name = "render_test",
-    srcs = ["pdf_test.go"],
+    srcs = [
+        "pdf_test.go",
+        "table_test.go",
+    ],
     embed = [":render"],
     deps = ["//internal/bfv"],
 )

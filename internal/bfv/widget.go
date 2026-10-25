@@ -16,8 +16,22 @@ type widgetResponse[T any] struct {
 }
 
 type tableData struct {
+	CompetitionName string `json:"competitionName"`
+	Configuration   struct {
+		PromotionTeamCount         int `json:"promotionTeamCount"`
+		PromotionPlayoffTeamCount  int `json:"promotionPlayoffTeamCount"`
+		RelegationPlayoffTeamCount int `json:"relegationPlayoffTeamCount"`
+		RelegationTeamCount        int `json:"relegationTeamCount"`
+	} `json:"configuration"`
 	Table []struct {
-		Team struct {
+		Position     int `json:"position"`
+		Matches      int `json:"matches"`
+		MatchesWon   int `json:"matchesWon"`
+		MatchesDrawn int `json:"matchesDrawn"`
+		MatchesLost  int `json:"matchesLost"`
+		GoalsDiff    int `json:"goalsDiff"`
+		Points       int `json:"points"`
+		Team         struct {
 			PermanentID string `json:"permanentId"`
 			Name        string `json:"name"`
 		} `json:"team"`
@@ -36,6 +50,13 @@ type widgetMatch struct {
 	HomeTeamName  string `json:"homeTeamName"`
 	GuestTeamName string `json:"guestTeamName"`
 	Result        string `json:"result"`
+
+	HomeTeamPermanentID  string `json:"homeTeamPermanentId"`
+	GuestTeamPermanentID string `json:"guestTeamPermanentId"`
+	HomeClubID           string `json:"homeClubId"`
+	GuestClubID          string `json:"guestClubId"`
+	HomeLogoPrivate      bool   `json:"homeLogoPrivate"`
+	GuestLogoPrivate     bool   `json:"guestLogoPrivate"`
 }
 
 var berlin = func() *time.Location {
@@ -57,17 +78,27 @@ func (c *Client) widget(ctx context.Context, path string, v any) error {
 	return nil
 }
 
+func (c *Client) table(ctx context.Context, compoundID string) (tableData, error) {
+	var r widgetResponse[tableData]
+	err := c.widget(ctx, "/competition/"+compoundID+"/table", &r)
+	return r.Data, err
+}
+
 // TeamIDs returns the permanent IDs of all teams in a competition's table.
 func (c *Client) TeamIDs(ctx context.Context, compoundID string) ([]string, error) {
-	var r widgetResponse[tableData]
-	if err := c.widget(ctx, "/competition/"+compoundID+"/table", &r); err != nil {
+	t, err := c.table(ctx, compoundID)
+	if err != nil {
 		return nil, err
 	}
-	ids := make([]string, 0, len(r.Data.Table))
-	for _, row := range r.Data.Table {
+	return t.teamIDs(), nil
+}
+
+func (t tableData) teamIDs() []string {
+	ids := make([]string, 0, len(t.Table))
+	for _, row := range t.Table {
 		ids = append(ids, row.Team.PermanentID)
 	}
-	return ids, nil
+	return ids
 }
 
 // TeamMatches returns a team's season fixtures within the given competition,
@@ -97,6 +128,14 @@ func (wm widgetMatch) toMatch() (Match, error) {
 		Home:   strings.TrimSpace(wm.HomeTeamName),
 		Guest:  strings.TrimSpace(wm.GuestTeamName),
 		Result: strings.TrimSpace(wm.Result),
+
+		HomeTeamID:  wm.HomeTeamPermanentID,
+		GuestTeamID: wm.GuestTeamPermanentID,
+		HomeClubID:  wm.HomeClubID,
+		GuestClubID: wm.GuestClubID,
+
+		HomeLogoPrivate:  wm.HomeLogoPrivate,
+		GuestLogoPrivate: wm.GuestLogoPrivate,
 	}
 	if wm.KickoffDate == "" {
 		return m, nil
