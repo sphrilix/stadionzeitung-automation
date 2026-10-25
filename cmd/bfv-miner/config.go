@@ -46,6 +46,16 @@ type team struct {
 	// Days is how far back (results) or ahead (preview) club matches are
 	// listed; 0 means defaultDays.
 	Days int `json:"days"`
+	// FuPa is a fupa.net team URL or slug. Kinds that need FuPa read it
+	// from there; torjaeger prefers it over BFV, whose squads can be
+	// private. Only set it with FuPa's permission.
+	FuPa string `json:"fupa"`
+	// Roles limits a kader's staff to these roles (as FuPa names them,
+	// e.g. "Trainer"); empty means all.
+	Roles []string `json:"roles"`
+	// AllPlayers lists every player in a kader, not only those with a
+	// shirt number.
+	AllPlayers bool `json:"allPlayers"`
 	// Highlight sets table rows of teams whose name contains it in bold.
 	Highlight string `json:"highlight"`
 
@@ -60,24 +70,35 @@ const (
 	kindScorers   = "torjaeger"
 	kindYouthDone = "jugend-ergebnisse"
 	kindYouthNext = "jugend-vorschau"
+	kindSquad     = "kader"
+	kindLeagueTop = "liga-torjaeger"
+	kindReferee   = "schiedsrichter"
 
 	defaultTop  = 3
 	defaultDays = 7
 )
 
-var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext}
+var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext,
+	kindSquad, kindLeagueTop, kindReferee}
 
 // teamKinds are the kinds about one team rather than a league, clubKinds
-// those about all teams of a club.
+// those about all teams of a club, fupaKinds those only FuPa has data for.
 var (
 	teamKinds = []string{kindSeason, kindScorers}
 	clubKinds = []string{kindYouthDone, kindYouthNext}
+	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee}
 )
 
 func (t team) validate() error {
 	switch {
 	case t.Kind != "" && !slices.Contains(kinds, t.Kind):
 		return fmt.Errorf("unknown kind %q (want one of %s)", t.Kind, strings.Join(kinds, ", "))
+	case slices.Contains(fupaKinds, t.Kind):
+		if t.FuPa == "" {
+			return errors.New("needs a fupa team")
+		}
+	case t.Kind == kindScorers && t.FuPa != "":
+		// FuPa replaces the BFV team.
 	case slices.Contains(teamKinds, t.Kind):
 		if t.Team == "" {
 			return errors.New("needs a team")

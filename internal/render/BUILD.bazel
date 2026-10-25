@@ -27,6 +27,7 @@ go_test(
         "scorers_test.go",
         "season_test.go",
         "table_test.go",
+        "text_test.go",
     ],
     embed = [":render"],
     deps = ["//internal/bfv"],

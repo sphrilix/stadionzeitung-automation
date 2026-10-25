@@ -1,10 +1,12 @@
 // Command bfv-miner writes PDFs with BFV data: a league's previous, current
 // and next matchday or its table, a team's season fixtures or top scorers,
-// or a club's recent and upcoming youth matches.
+// or a club's recent and upcoming youth matches. With FuPa's permission it
+// adds what BFV lacks: squads, league top scorers and referees.
 //
 //	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
 //	bfv-miner [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
 //	bfv-miner [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
+//	bfv-miner [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
@@ -24,6 +26,7 @@ import (
 	"time"
 
 	"github.com/sphrilix/stadionzeitung-automation/internal/bfv"
+	"github.com/sphrilix/stadionzeitung-automation/internal/fupa"
 	"github.com/sphrilix/stadionzeitung-automation/internal/render"
 )
 
@@ -45,7 +48,7 @@ func main() {
 	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -80,6 +83,8 @@ func runSingle(arg, out, kind string, matchday, days int) error {
 		t = team{Kind: kind, Team: arg}
 	case slices.Contains(clubKinds, kind):
 		t = team{Kind: kind, Club: arg, Days: days}
+	case slices.Contains(fupaKinds, kind):
+		t = team{Kind: kind, FuPa: arg}
 	}
 	if err := t.validate(); err != nil {
 		return err
@@ -136,10 +141,15 @@ func build(t team, c *bfv.Client) (output, error) {
 		return buildTable(ctx, c, t)
 	case kindSeason:
 		return buildSeason(ctx, c, t)
-	case kindScorers:
-		return buildScorers(ctx, c, t)
 	case kindYouthDone, kindYouthNext:
 		return buildYouth(ctx, c, t)
+	case kindSquad, kindLeagueTop, kindReferee:
+		return buildFuPa(ctx, fupa.NewClient(), t)
+	case kindScorers:
+		if t.FuPa != "" {
+			return buildFuPa(ctx, fupa.NewClient(), t)
+		}
+		return buildScorers(ctx, c, t)
 	default:
 		return buildMatchdays(ctx, c, t)
 	}
