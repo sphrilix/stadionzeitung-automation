@@ -35,6 +35,60 @@ func TestLoadConfigResolvesRelativePaths(t *testing.T) {
 	}
 }
 
+func TestLoadConfigYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sz.yaml")
+	err := os.WriteFile(path, []byte(`# comment
+outDir: C:\Users\x\Dateien
+teams:
+  - file: Kader-Gast.pdf   # trailing comment
+    kind: kader
+    fupa: fc-sturm-hauzenberg-m1
+    opponent: true
+    roles: [Trainer, Co-Trainer]
+`), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := loadConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Unquoted YAML keeps backslashes as they are. (Off Windows the path is
+	// relative, hence joined with the config's directory.)
+	if !strings.HasSuffix(c.OutDir, `C:\Users\x\Dateien`) {
+		t.Errorf("OutDir = %q", c.OutDir)
+	}
+	tm := c.Teams[0]
+	if tm.Kind != kindSquad || !tm.Opponent || len(tm.Roles) != 2 || tm.Roles[1] != "Co-Trainer" {
+		t.Errorf("team = %+v", tm)
+	}
+}
+
+func TestLoadConfigRejectsUnknownKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sz.yaml")
+	if err := os.WriteFile(path, []byte("teams:\n  - file: x.pdf\n    kinde: tabelle\n    league: 0307PL23RO000007VS5489BUVT69HBT7-G\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadConfig(path); err == nil || !strings.Contains(err.Error(), "kinde") {
+		t.Errorf("err = %v, want one naming the misspelt key", err)
+	}
+}
+
+// The shipped example is the club's full setup; it must stay loadable.
+func TestExampleConfigLoads(t *testing.T) {
+	c, err := loadConfig("../../stadionzeitung.example.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Teams) < 20 {
+		t.Errorf("example has %d entries, want the full setup", len(c.Teams))
+	}
+	if c.Fonts.Regular == "" || c.Fonts.Bold == "" {
+		t.Errorf("fonts = %+v, want both set", c.Fonts)
+	}
+}
+
 func TestLoadConfigRejectsIncompleteTeam(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "sz.json")
 	if err := os.WriteFile(path, []byte(`{"teams": [{"file": "Spielplan-H1.pdf"}]}`), 0o644); err != nil {

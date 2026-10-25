@@ -2,3 +2,5 @@ load("@gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/sphrilix/stadionzeitung-automation
 gazelle(name = "gazelle")
+
+exports_files(["stadionzeitung.example.yaml"])

@@ -50,7 +50,7 @@ fupa.net team URL or slug, or the bare id. Flags:
 Download `stadionzeitung-automation_<version>_windows_amd64.zip` from the
 [latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest)
 and unpack it. The archive holds `stadionzeitung-automation.exe`, this
-README, the license and `stadionzeitung.example.json`; `checksums.txt` lists
+README, the license and `stadionzeitung.example.yaml`; `checksums.txt` lists
 the SHA-256 sums.
 
 Releases contain only the Windows build by default. Linux and macOS archives
@@ -75,12 +75,16 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    [latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest),
    e.g. into `C:\stadionzeitung-automation\`, on the PC that has the InDesign
    document's folder (e.g. synced via OneDrive).
-2. **Write the config.** Copy `stadionzeitung.example.json` to
-   `stadionzeitung.json` next to `stadionzeitung-automation.exe` and adjust it:
+2. **Write the config.** Copy `stadionzeitung.example.yaml` to
+   `stadionzeitung.yaml` next to `stadionzeitung-automation.exe` and adjust it.
+   The example is the club's complete setup, with every PDF of the programme
+   and comments naming its page. The config is YAML: one `- file: …` block
+   per PDF, `#` starts a comment, and indentation matters (use spaces, not
+   tabs). Misspelt keys are reported as errors. JSON configs still work.
    - `outDir`: the folder the InDesign document links its graphics from. It
-     must already exist. Use forward slashes (`C:/Users/…`) or doubled
-     backslashes (`C:\\Users\\…`); relative paths are resolved against the
-     config file.
+     must already exist. Write the path as it is (`C:\Users\…` or
+     `C:/Users/…`); only inside "double quotes" must backslashes be doubled.
+     Relative paths are resolved against the config file.
    - `fonts`: TrueType files for regular and bold text, typically the font of
      the layout (the example uses Calibri). Set both or neither; without them
      the Go font is used.
@@ -89,11 +93,11 @@ them in one go, so updating the fixtures is: run the tool, update the links.
      and copy the address; it ends in `…-G`). `kind` picks the content (see
      the table above; default `spieltage`). For a `tabelle`, `highlight`
      sets the rows of teams whose name contains it in bold, e.g.
-     `"Hauzenberg"` for the club's own teams. A `spielplan` takes `team`
+     `Hauzenberg` for the club's own teams. A `spielplan` takes `team`
      instead of `league`: the team's page on bfv.de (on the club page under
      *Mannschaften*, or a team name on the league page). So does
      `torjaeger`, which lists the `top` scorers (default 3, plus anyone tied
-     with the last); with `"opponent": true` it lists those of the team's
+     with the last); with `opponent: true` it lists those of the team's
      next league opponent instead, for the guest page. Clubs that keep their
      squad private on bfv.de have no scorers to list; that file then fails
      with a message and the previous one is kept. The `jugend` kinds take
@@ -121,7 +125,7 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    ```bat
    @echo off
    cd /d "%~dp0"
-   stadionzeitung-automation.exe -config stadionzeitung.json
+   stadionzeitung-automation.exe -config stadionzeitung.yaml
    pause
    ```
 
@@ -131,7 +135,7 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    tool's folder
 
    ```sh
-   stadionzeitung-automation.exe -config stadionzeitung.json
+   stadionzeitung-automation.exe -config stadionzeitung.yaml
    ```
 
    It writes every PDF listed in the config with the previous, current and
@@ -162,15 +166,30 @@ scorers or referees, and some clubs keep their squad private there.
 or just its slug `fc-sturm-hauzenberg-m1`. Without the season suffix
 (`-2026-27`) it always means the current season.
 
-```json
-{"file": "Kader-H1.pdf", "kind": "kader", "fupa": "fc-sturm-hauzenberg-m1",
- "roles": ["Trainer", "Torwart-Trainer", "Fitnesstrainer", "Betreuer"]},
-{"file": "Kader-Gast.pdf", "kind": "kader", "fupa": "fc-sturm-hauzenberg-m1",
- "opponent": true, "allPlayers": true},
-{"file": "Torjaeger-Gast.pdf", "kind": "torjaeger", "fupa": "fc-sturm-hauzenberg-m1",
- "opponent": true},
-{"file": "Liga-Torjaeger-H1.pdf", "kind": "liga-torjaeger", "fupa": "fc-sturm-hauzenberg-m1"},
-{"file": "Schiedsrichter.pdf", "kind": "schiedsrichter", "fupa": "fc-sturm-hauzenberg-m1"}
+```yaml
+  - file: Kader-H1.pdf
+    kind: kader
+    fupa: fc-sturm-hauzenberg-m1
+    roles: [Trainer, Torwart-Trainer, Fitnesstrainer, Betreuer]
+
+  - file: Kader-Gast.pdf
+    kind: kader
+    fupa: fc-sturm-hauzenberg-m1
+    opponent: true
+    allPlayers: true
+
+  - file: Torjaeger-Gast.pdf
+    kind: torjaeger
+    fupa: fc-sturm-hauzenberg-m1
+    opponent: true
+
+  - file: Liga-Torjaeger-H1.pdf
+    kind: liga-torjaeger
+    fupa: fc-sturm-hauzenberg-m1
+
+  - file: Schiedsrichter.pdf
+    kind: schiedsrichter
+    fupa: fc-sturm-hauzenberg-m1
 ```
 
 - `kader` lists staff by role, then the players by position (Tor, Abwehr,
@@ -179,7 +198,7 @@ or just its slug `fc-sturm-hauzenberg-m1`. Without the season suffix
   shirt number, so only players with a number are listed, unless
   `allPlayers` is set (useful when a club numbers nobody or only part of
   its squad). `roles` limits the staff to these roles, as FuPa names
-  them; without it all are listed. `"opponent": true` shows the next
+  them; without it all are listed. `opponent: true` shows the next
   league opponent's squad, for the guest page.
 - `torjaeger` with `fupa` reads the goals from FuPa instead of BFV, so it
   also works for clubs whose BFV squad is private.

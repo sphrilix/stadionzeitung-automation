@@ -64,7 +64,7 @@ jobs:
           name=stadionzeitung-automation_${TAG}_${PLATFORM}
           mkdir -p "$name" dist
           cp "$bin" "$name/"
-          cp README.md LICENSE stadionzeitung.example.json "$name/"
+          cp README.md LICENSE stadionzeitung.example.yaml "$name/"
           if [[ $PLATFORM == windows_* ]]; then
             zip -r "dist/$name.zip" "$name"
           else

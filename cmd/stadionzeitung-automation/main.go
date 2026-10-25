@@ -7,7 +7,7 @@
 //	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
 //	stadionzeitung-automation [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
 //	stadionzeitung-automation [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
-//	stadionzeitung-automation -config stadionzeitung.json
+//	stadionzeitung-automation -config stadionzeitung.yaml
 //	stadionzeitung-automation -version
 package main
 
@@ -41,14 +41,14 @@ var (
 var version = "dev"
 
 func main() {
-	configPath := flag.String("config", "", "write every PDF listed in this JSON config instead of a single league")
+	configPath := flag.String("config", "", "write every PDF listed in this YAML (or JSON) config instead of a single league")
 	out := flag.String("o", "", "output PDF (default: named after the league and kind)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
 	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
 	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()

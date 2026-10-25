@@ -1,0 +1,126 @@
+# Stadionzeitung (Staffelberg-Kicker) of FC Sturm Hauzenberg: every PDF the
+# InDesign document links, regenerated with
+#
+#   stadionzeitung-automation -config stadionzeitung.yaml
+#
+# Relative paths are resolved against this file. Each entry writes one PDF
+# into outDir; `kind` says what it shows (default: spieltage). See the
+# README for all kinds and options.
+
+# The folder the InDesign document links its graphics from. It must exist.
+outDir: C:/Users/<user>/OneDrive/Stadionzeitung/Dateien
+
+# The layout's font; without these lines the built-in Go font is used.
+fonts:
+  regular: C:/Windows/Fonts/calibri.ttf
+  bold: C:/Windows/Fonts/calibrib.ttf
+
+teams:
+  # ── 1. Mannschaft, Landesliga Mitte ──────────────────────────────────────
+
+  - file: Spielplan-H1.pdf            # Aktuelle Spieltage (S. 15)
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
+
+  - file: Tabelle-H1.pdf              # Tabelle (S. 13)
+    kind: tabelle
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
+    highlight: Hauzenberg
+
+  - file: Saisonspielplan-H1.pdf      # Saisonspielplan (S. 17)
+    kind: spielplan
+    team: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
+
+  - file: Torjaeger-H1.pdf            # Torjäger im Kader (S. 11)
+    kind: torjaeger
+    team: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
+
+  # ── 2. Mannschaft, Kreisliga Passauer Land ───────────────────────────────
+
+  - file: Spielplan-H2.pdf            # Aktuelle Spieltage (S. 31)
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G
+
+  - file: Tabelle-H2.pdf              # Tabelle (S. 29)
+    kind: tabelle
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/0314139IA0000006VS5489BTVU7GTVLE-G
+    highlight: Hauzenberg
+
+  - file: Saisonspielplan-H2.pdf      # Saisonspielplan (S. 33)
+    kind: spielplan
+    team: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
+
+  - file: Torjaeger-H2.pdf            # Torjäger im Kader (S. 27)
+    kind: torjaeger
+    team: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
+
+  # ── SG Haag I / Hauzenberg III, A-Klasse Hauzenberg ──────────────────────
+
+  - file: Spielplan-H3.pdf
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G
+
+  - file: Tabelle-H3.pdf              # Tabelle (S. 37)
+    kind: tabelle
+    league: https://www.bfv.de/ergebnisse/wettbewerb/-/03160921KS000007VS5489BTVU7GTVLE-G
+    highlight: Hauzenberg
+
+  - file: Saisonspielplan-H3.pdf      # Saisonspielplan (S. 35)
+    kind: spielplan
+    team: https://www.bfv.de/mannschaften/sg-haag-1-hauzenberg-3/016PBL2NIG000000VV0AG80NVV8OQVTB
+
+  # ── Jugend ───────────────────────────────────────────────────────────────
+
+  - file: Jugend-Ergebnisse.pdf       # Spielergebnisse der Jugend (S. 21)
+    kind: jugend-ergebnisse
+    club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
+
+  - file: Jugend-Vorschau.pdf         # Kommende Spiele der Jugend (S. 23)
+    kind: jugend-vorschau
+    club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
+
+  # ── From FuPa: only with FuPa's written permission (see the README) ──────
+
+  - file: Kader-H1.pdf                # Kader 1. Mannschaft (S. 11)
+    kind: kader
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+    roles: [Trainer, Torwart-Trainer, Fitnesstrainer, Betreuer]
+
+  - file: Liga-Torjaeger-H1.pdf       # Top-Torjäger der Landesliga (S. 13)
+    kind: liga-torjaeger
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+
+  - file: Schiedsrichter.pdf          # Schiedsrichter (S. 3, 5); FuPa has it
+    kind: schiedsrichter              # only shortly before the match
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+
+  # Gastmannschaft (S. 5): the next league opponent of the 1. Mannschaft.
+  # Generate on the weekend before the home game.
+
+  - file: Kader-Gast.pdf
+    kind: kader
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+    opponent: true
+    allPlayers: true                  # guests often number only part of their squad
+    roles: [Trainer, Co-Trainer, Spielertrainer, spielender Co-Trainer]
+
+  - file: Torjaeger-Gast.pdf
+    kind: torjaeger
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+    opponent: true
+
+  - file: Kader-H2.pdf                # Kader 2. Mannschaft (S. 27)
+    kind: kader
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m2
+    roles: [Trainer, Torwart-Trainer, Physiotherapeut]
+
+  - file: Liga-Torjaeger-H2.pdf       # Top-Torjäger der Kreisliga (S. 29)
+    kind: liga-torjaeger
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m2
+
+  # The SG's FuPa page only works with the season in its name: update
+  # "2026-27" each summer.
+  - file: Kader-H3.pdf
+    kind: kader
+    fupa: https://www.fupa.net/team/sg-haag-hauzenberg-m1-2026-27
+
+  - file: Torjaeger-H3.pdf
+    kind: torjaeger
+    fupa: https://www.fupa.net/team/sg-haag-hauzenberg-m1-2026-27
