@@ -32,23 +32,27 @@ jugend: [ergebnisse, vorschau]
 #   tabelle-torjaeger  table with the league's top   Tabelle-Torjaeger-<Team>.pdf
 #                      scorers below (S. 13, 29)
 #   schiedsrichter     referee of the next match     Schiedsrichter-<Team>.pdf
+#   seite              the team's whole page: name, team photo, staff,
+#                      squad and top scorers (S. 11, 27)  Seite-<Team>.pdf
+# name: the headline of the team's seite (default: its name on BFV).
 # gast: for the next league opponent, i.e. the guest (S. 5):
-#   seite      the whole guest page: name, team photo, coaches, squad and
-#              top scorers                           Seite-<Team>-Gast.pdf
-#   kader, torjaeger  as above, separately           Kader-<Team>-Gast.pdf, …
+#   seite      the guest's whole page, with its coaches  Seite-<Team>-Gast.pdf
+#   kader, torjaeger  parts of it, separately        Kader-<Team>-Gast.pdf, …
 
 teams:
   H1:                                 # 1. Mannschaft, Landesliga Mitte
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
-    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader, schiedsrichter]
+    name: FC Sturm Hauzenberg I
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, seite, schiedsrichter]
     gast: [seite]
     roles: [Trainer, Torwart-Trainer, Fitnesstrainer, Betreuer]
 
   H2:                                 # 2. Mannschaft, Kreisliga Passauer Land
     bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
     fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m2
-    pdfs: [spieltage, tabelle-torjaeger, spielplan, torjaeger, kader]
+    name: FC Sturm Hauzenberg II
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, seite]
     roles: [Trainer, Torwart-Trainer, Physiotherapeut]
 
   H3:                                 # SG Haag I / Hauzenberg III, A-Klasse
@@ -56,4 +60,5 @@ teams:
     # The SG's FuPa page only works with the season in its name: update
     # "2026-27" each summer.
     fupa: https://www.fupa.net/team/sg-haag-hauzenberg-m1-2026-27
-    pdfs: [spieltage, tabelle, spielplan, torjaeger, kader]
+    name: SG Haag I / Hauzenberg III
+    pdfs: [spieltage, tabelle, spielplan, seite]

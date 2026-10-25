@@ -146,7 +146,18 @@ func build(t entry, c *bfv.Client) (output, error) {
 		return buildSeason(ctx, c, t)
 	case kindYouthDone, kindYouthNext:
 		return buildYouth(ctx, c, t)
-	case kindSquad, kindLeagueTop, kindReferee, kindGuestPage:
+	case kindTeamPage:
+		// FuPa names a club's teams alike, so an own team's page is headed
+		// by its BFV name, e.g. "FC Sturm Hauzenberg 2".
+		if !t.Opponent && t.Title == "" && t.Team != "" {
+			if id, err := parseTeam(t.Team); err == nil {
+				if info, err := c.FetchTeamInfo(ctx, id); err == nil {
+					t.Title = info.Name
+				}
+			}
+		}
+		return buildFuPa(ctx, fupa.NewClient(), t)
+	case kindSquad, kindLeagueTop, kindReferee:
 		return buildFuPa(ctx, fupa.NewClient(), t)
 	case kindTableTop:
 		return buildTableScorers(ctx, c, fupa.NewClient(), t)
