@@ -28,13 +28,9 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 
 	switch t.Kind {
 	case kindLeagueTop:
-		scorers, err := c.LeagueScorers(ctx, tm.Competition, top)
+		lines, err := leagueScorerLines(ctx, c, t)
 		if err != nil {
 			return output{}, err
-		}
-		lines := make([]string, len(scorers))
-		for i, s := range scorers {
-			lines[i] = fmt.Sprintf("%s (%s, %s)", s.Name, s.Team, render.Goals(s.Goals))
 		}
 		return linesOutput("Liga-Torjäger", lines), nil
 
@@ -54,7 +50,8 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 		return linesOutput("Schiedsrichter", []string{line}), nil
 	}
 
-	// Kader and torjaeger are about the team or its next opponent.
+	// Kader, torjaeger and the guest page are about the team or its next
+	// opponent.
 	if t.Opponent {
 		m, err := c.NextLeagueMatch(ctx, tm.Slug)
 		if err != nil {
@@ -67,21 +64,30 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 		return output{}, err
 	}
 	if t.Kind == kindScorers {
-		players := make([]bfv.Player, len(squad.Players))
-		for i, p := range squad.Players {
-			players[i] = bfv.Player{Name: p.Name(), Matches: p.Matches, Goals: p.Goals}
-		}
-		var lines []string
-		for _, p := range bfv.TopScorers(players, top) {
-			lines = append(lines, render.ScorerLine(p))
-		}
-		return linesOutput("Torjäger "+tm.Name, lines), nil
+		return linesOutput("Torjäger "+tm.Name, squadScorerLines(squad, top)), nil
 	}
 	roles := func(role string) bool { return len(t.Roles) == 0 || slices.Contains(t.Roles, role) }
 	if t.coachesOnly {
-		roles = func(role string) bool { return strings.Contains(role, "Trainer") }
+		roles = isCoach
 	}
 	rows := squadRows(squad, roles, t.AllPlayers)
+	if t.Kind == kindGuestPage {
+		if lines := squadScorerLines(squad, top); len(lines) > 0 {
+			rows = append(rows, render.Row{Label: "Torjäger:", Text: strings.Join(lines, "\n"), Gap: true})
+		}
+		g := render.GuestPage{Name: tm.Name, Rows: rows}
+		// Without a photo the page is still useful; the layout shows a gap.
+		if photo, err := c.TeamPhoto(ctx, squad); err == nil {
+			g.Photo, g.PhotoCredit = photo, squad.PhotoCredit
+		}
+		return output{
+			label: "Gastseite " + tm.Name,
+			name:  tm.Name + "-gastseite",
+			render: func(out io.Writer, fonts render.Fonts) error {
+				return render.RenderGuestPage(out, g, fonts)
+			},
+		}, nil
+	}
 	return output{
 		label: "Kader " + tm.Name,
 		name:  tm.Name + "-kader",
@@ -90,6 +96,45 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 		},
 	}, nil
 }
+
+// leagueScorerLines lists the top scorers of the league of an entry's FuPa
+// team, e.g. "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".
+func leagueScorerLines(ctx context.Context, c *fupa.Client, t entry) ([]string, error) {
+	slug, err := fupa.ParseTeam(t.FuPa)
+	if err != nil {
+		return nil, err
+	}
+	tm, err := c.Team(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	scorers, err := c.LeagueScorers(ctx, tm.Competition, cmp.Or(t.Top, defaultTop))
+	if err != nil {
+		return nil, err
+	}
+	lines := make([]string, len(scorers))
+	for i, s := range scorers {
+		lines[i] = fmt.Sprintf("%s (%s, %s)", s.Name, s.Team, render.Goals(s.Goals))
+	}
+	return lines, nil
+}
+
+// squadScorerLines lists a squad's top scorers, e.g. "J. Wagner (10 Tore)".
+func squadScorerLines(squad fupa.Squad, top int) []string {
+	players := make([]bfv.Player, len(squad.Players))
+	for i, p := range squad.Players {
+		players[i] = bfv.Player{Name: p.Name(), Matches: p.Matches, Goals: p.Goals}
+	}
+	var lines []string
+	for _, p := range bfv.TopScorers(players, top) {
+		lines = append(lines, render.ScorerLine(p))
+	}
+	return lines
+}
+
+// isCoach reports whether a FuPa staff role is a coach's, e.g. "Trainer",
+// "Co-Trainer" or "Spielertrainer".
+func isCoach(role string) bool { return strings.Contains(strings.ToLower(role), "trainer") }
 
 func linesOutput(label string, lines []string) output {
 	return output{

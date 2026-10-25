@@ -2,13 +2,20 @@ package fupa
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"slices"
+	"strings"
 )
 
 // Squad is a team's players and staff.
 type Squad struct {
 	Players []Player
 	Staff   []Staff
+	// Photo is the team photo's address on FuPa's image server, empty if
+	// there is none; PhotoCredit names the photographer.
+	Photo, PhotoCredit string
 }
 
 // Player is a squad member.
@@ -52,11 +59,20 @@ func (c *Client) Squad(ctx context.Context, teamSlug string) (Squad, error) {
 			Role          string `json:"role"`
 			IsDeactivated bool   `json:"isDeactivated"`
 		} `json:"coaches"`
+		Info struct {
+			TeamImage *struct {
+				Path   string `json:"path"`
+				Source string `json:"source"`
+			} `json:"teamImage"`
+		} `json:"info"`
 	}
 	if err := c.get(ctx, "/teams/"+teamSlug+"/squad", &r); err != nil {
 		return Squad{}, err
 	}
 	var s Squad
+	if img := r.Info.TeamImage; img != nil {
+		s.Photo, s.PhotoCredit = img.Path, strings.TrimSpace(img.Source)
+	}
 	for _, p := range r.Players {
 		if p.IsDeactivated {
 			continue
@@ -93,4 +109,30 @@ func (s Squad) Numbered() []Player {
 		return s.Players
 	}
 	return out
+}
+
+// photoSize is the largest size FuPa's image server offers; across the
+// 160 mm of a page it prints at about 300 dpi.
+const photoSize = "1920x1080.jpeg"
+
+// TeamPhoto downloads a squad's team photo as JPEG.
+func (c *Client) TeamPhoto(ctx context.Context, s Squad) ([]byte, error) {
+	if s.Photo == "" {
+		return nil, fmt.Errorf("FuPa has no team photo")
+	}
+	url := strings.TrimSuffix(s.Photo, "/") + "/" + photoSize
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("FuPa team photo: %s", resp.Status)
+	}
+	return io.ReadAll(resp.Body)
 }

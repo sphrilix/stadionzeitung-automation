@@ -48,16 +48,37 @@ var zoneColors = map[bfv.Zone][3]int{
 // RenderTable writes a single-page PDF with a league table: one row per
 // team, positions coloured by promotion and relegation zone.
 func RenderTable(w io.Writer, t bfv.Table, fonts Fonts, opts TableOptions) error {
-	height := 2*edge + tHeaderHeight + float64(len(t.Rows))*tRowHeight + 2*boxPadding
-	pdf, err := newPage(boxWidth+2*edge, height, fonts)
-	if err != nil {
-		return err
-	}
+	return renderBlocks(w, fonts, tableBlock{t, opts})
+}
+
+// RenderTableScorers writes a league table with the league's top scorers
+// below it, labelled "Top-Torjäger:", one per line, as the table pages are
+// set.
+func RenderTableScorers(w io.Writer, t bfv.Table, opts TableOptions, scorers []string, fonts Fonts) error {
+	return renderBlocks(w, fonts, tableBlock{t, opts},
+		rowsBlock{{Label: "Top-Torjäger:", Text: strings.Join(scorers, "\n")}})
+}
+
+type tableBlock struct {
+	t    bfv.Table
+	opts TableOptions
+}
+
+func (b tableBlock) size(*fpdf.Fpdf) (float64, float64) {
+	return boxWidth, tHeaderHeight + float64(len(b.t.Rows))*tRowHeight + 2*boxPadding
+}
+
+func (b tableBlock) draw(pdf *fpdf.Fpdf, x, y float64) {
+	t, opts := b.t, b.opts
+	_, height := b.size(pdf)
 	logos := registerLogos(pdf, opts.Logos)
 
-	x, y := edge, edge
+	// The column widths assume fpdf's default cell margin, which text
+	// blocks change.
+	pdf.SetCellMargin(1)
 	pdf.SetLineWidth(0.3)
-	pdf.Rect(x, y, boxWidth, height-2*edge, "D")
+	pdf.SetDrawColor(0, 0, 0)
+	pdf.Rect(x, y, boxWidth, height, "D")
 	pdf.Line(x, y+tHeaderHeight, x+boxWidth, y+tHeaderHeight)
 
 	pdf.SetFont(fontFamily, "B", 8)
@@ -124,7 +145,7 @@ func RenderTable(w io.Writer, t bfv.Table, fonts Fonts, opts TableOptions) error
 		pdf.CellFormat(tColPoints, tRowHeight, strconv.Itoa(r.Points), "", 0, "C", false, 0, "")
 		rowY += tRowHeight
 	}
-	return output(w, pdf)
+	pdf.SetDrawColor(0, 0, 0)
 }
 
 // registerLogos adds the logos to the PDF and returns their image names by
