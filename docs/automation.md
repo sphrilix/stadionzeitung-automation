@@ -5,6 +5,9 @@ for FC Sturm Hauzenberg – SC Luhe-Wildenau (17.10.2026, 40 pages). For
 each block: where the data comes from and whether stadionzeitung-automation can generate
 it. Sponsor pages (every even page) are left out.
 
+The tool is independent and not affiliated with the BFV or FuPa (see the
+[README](../README.md#not-affiliated-with-bfv-or-fupa)).
+
 Data sources used:
 
 - **Widget API** (`widget-prod.bfv.de/api/service/widget/v1`): the JSON
