@@ -41,6 +41,11 @@ type team struct {
 	// Opponent lists the scorers of the team's next league opponent
 	// instead of the team's own.
 	Opponent bool `json:"opponent"`
+	// Club is a bfv.de club URL or club id, for kinds about all its teams.
+	Club string `json:"club"`
+	// Days is how far back (results) or ahead (preview) club matches are
+	// listed; 0 means defaultDays.
+	Days int `json:"days"`
 	// Highlight sets table rows of teams whose name contains it in bold.
 	Highlight string `json:"highlight"`
 
@@ -53,25 +58,39 @@ const (
 	kindTable     = "tabelle"
 	kindSeason    = "spielplan"
 	kindScorers   = "torjaeger"
+	kindYouthDone = "jugend-ergebnisse"
+	kindYouthNext = "jugend-vorschau"
 
-	defaultTop = 3
+	defaultTop  = 3
+	defaultDays = 7
 )
 
-var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers}
+var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext}
 
-// teamKinds are the kinds about one team rather than a league.
-var teamKinds = []string{kindSeason, kindScorers}
+// teamKinds are the kinds about one team rather than a league, clubKinds
+// those about all teams of a club.
+var (
+	teamKinds = []string{kindSeason, kindScorers}
+	clubKinds = []string{kindYouthDone, kindYouthNext}
+)
 
 func (t team) validate() error {
 	switch {
 	case t.Kind != "" && !slices.Contains(kinds, t.Kind):
 		return fmt.Errorf("unknown kind %q (want one of %s)", t.Kind, strings.Join(kinds, ", "))
-	case slices.Contains(teamKinds, t.Kind) && t.Team == "":
-		return errors.New("needs a team")
-	case !slices.Contains(teamKinds, t.Kind) && t.League == "":
+	case slices.Contains(teamKinds, t.Kind):
+		if t.Team == "" {
+			return errors.New("needs a team")
+		}
+	case slices.Contains(clubKinds, t.Kind):
+		if t.Club == "" {
+			return errors.New("needs a club")
+		}
+	case t.League == "":
 		return errors.New("needs a league")
-	case t.Top < 0:
-		return errors.New("top must not be negative")
+	}
+	if t.Top < 0 || t.Days < 0 {
+		return errors.New("top and days must not be negative")
 	}
 	return nil
 }

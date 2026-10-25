@@ -4,6 +4,7 @@ go_library(
     name = "bfv",
     srcs = [
         "client.go",
+        "club.go",
         "model.go",
         "page.go",
         "season.go",
@@ -20,6 +21,7 @@ go_test(
     name = "bfv_test",
     srcs = [
         "client_test.go",
+        "club_test.go",
         "page_test.go",
         "season_test.go",
         "squad_test.go",

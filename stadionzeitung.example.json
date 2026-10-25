@@ -70,6 +70,16 @@
       "file": "Torjaeger-H3.pdf",
       "kind": "torjaeger",
       "team": "https://www.bfv.de/mannschaften/sg-haag-1-hauzenberg-3/016PBL2NIG000000VV0AG80NVV8OQVTB"
+    },
+    {
+      "file": "Jugend-Ergebnisse.pdf",
+      "kind": "jugend-ergebnisse",
+      "club": "https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I"
+    },
+    {
+      "file": "Jugend-Vorschau.pdf",
+      "kind": "jugend-vorschau",
+      "club": "https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I"
     }
   ]
 }
