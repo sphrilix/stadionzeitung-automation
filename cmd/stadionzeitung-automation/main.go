@@ -77,14 +77,17 @@ func main() {
 }
 
 func runSingle(arg, out, kind string, matchday, days int) error {
-	t := team{Kind: kind, League: arg, matchday: matchday}
+	t := entry{Kind: kind, League: arg, matchday: matchday}
 	switch {
+	case !reCompoundID.MatchString(arg) && !slices.Contains(clubKinds, kind) && !slices.Contains(fupaKinds, kind):
+		// A team URL: its league is looked up.
+		t = entry{Kind: kind, Team: arg, matchday: matchday}
 	case slices.Contains(teamKinds, kind):
-		t = team{Kind: kind, Team: arg}
+		t = entry{Kind: kind, Team: arg}
 	case slices.Contains(clubKinds, kind):
-		t = team{Kind: kind, Club: arg, Days: days}
+		t = entry{Kind: kind, Club: arg, Days: days}
 	case slices.Contains(fupaKinds, kind):
-		t = team{Kind: kind, FuPa: arg}
+		t = entry{Kind: kind, FuPa: arg}
 	}
 	if err := t.validate(); err != nil {
 		return err
@@ -99,7 +102,7 @@ func runSingle(arg, out, kind string, matchday, days int) error {
 	return write(fromWorkingDir(out), o, render.Fonts{})
 }
 
-// runConfig writes every configured PDF. A failing team does not stop the
+// runConfig writes every configured PDF. A failing PDF does not stop the
 // others; all failures are reported together.
 func runConfig(path string) error {
 	c, err := loadConfig(path)
@@ -112,13 +115,13 @@ func runConfig(path string) error {
 	}
 	bc := bfv.NewClient()
 	var errs []error
-	for _, t := range c.Teams {
-		o, err := build(t, bc)
+	for _, e := range c.entries {
+		o, err := build(e, bc)
 		if err == nil {
-			err = write(filepath.Join(c.OutDir, t.File), o, fonts)
+			err = write(filepath.Join(c.OutDir, e.File), o, fonts)
 		}
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s: %w", t.File, err))
+			errs = append(errs, fmt.Errorf("%s: %w", e.File, err))
 		}
 	}
 	return errors.Join(errs...)
@@ -133,7 +136,7 @@ type output struct {
 }
 
 // build fetches the data for one config entry.
-func build(t team, c *bfv.Client) (output, error) {
+func build(t entry, c *bfv.Client) (output, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	switch t.Kind {
@@ -155,8 +158,23 @@ func build(t team, c *bfv.Client) (output, error) {
 	}
 }
 
-func buildMatchdays(ctx context.Context, c *bfv.Client, t team) (output, error) {
-	compoundID, matchday, err := parseLeague(t.League)
+// league returns the competition id of an entry's league, the matchday a
+// league URL names (0 if none), and the name of the entry's team, if any.
+func league(ctx context.Context, c *bfv.Client, t entry) (compoundID string, matchday int, team string, err error) {
+	if t.League != "" {
+		compoundID, matchday, err = parseLeague(t.League)
+		return compoundID, matchday, "", err
+	}
+	teamID, err := parseTeam(t.Team)
+	if err != nil {
+		return "", 0, "", err
+	}
+	info, err := c.FetchTeamInfo(ctx, teamID)
+	return info.CompoundID, 0, info.Name, err
+}
+
+func buildMatchdays(ctx context.Context, c *bfv.Client, t entry) (output, error) {
+	compoundID, matchday, _, err := league(ctx, c, t)
 	if err != nil {
 		return output{}, err
 	}
@@ -176,8 +194,9 @@ func buildMatchdays(ctx context.Context, c *bfv.Client, t team) (output, error) 
 	}, nil
 }
 
-func buildTable(ctx context.Context, c *bfv.Client, t team) (output, error) {
-	compoundID, _, err := parseLeague(t.League)
+func buildTable(ctx context.Context, c *bfv.Client, t entry) (output, error) {
+	// The team's own row is set in bold.
+	compoundID, _, highlight, err := league(ctx, c, t)
 	if err != nil {
 		return output{}, err
 	}
@@ -199,12 +218,12 @@ func buildTable(ctx context.Context, c *bfv.Client, t team) (output, error) {
 		label: "Tabelle",
 		name:  tbl.League + "-tabelle",
 		render: func(out io.Writer, fonts render.Fonts) error {
-			return render.RenderTable(out, tbl, fonts, render.TableOptions{Logos: logos, Highlight: t.Highlight})
+			return render.RenderTable(out, tbl, fonts, render.TableOptions{Logos: logos, Highlight: highlight})
 		},
 	}, nil
 }
 
-func buildSeason(ctx context.Context, c *bfv.Client, t team) (output, error) {
+func buildSeason(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	teamID, err := parseTeam(t.Team)
 	if err != nil {
 		return output{}, err
@@ -222,7 +241,7 @@ func buildSeason(ctx context.Context, c *bfv.Client, t team) (output, error) {
 	}, nil
 }
 
-func buildScorers(ctx context.Context, c *bfv.Client, t team) (output, error) {
+func buildScorers(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	teamID, err := parseTeam(t.Team)
 	if err != nil {
 		return output{}, err
@@ -253,7 +272,7 @@ func buildScorers(ctx context.Context, c *bfv.Client, t team) (output, error) {
 	}, nil
 }
 
-func buildYouth(ctx context.Context, c *bfv.Client, t team) (output, error) {
+func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	clubID, err := parseID(t.Club)
 	if err != nil {
 		return output{}, err

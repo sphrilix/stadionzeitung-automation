@@ -27,12 +27,11 @@ stadionzeitung-automation -config stadionzeitung.yaml
 
 ## What it generates
 
-Each entry in the config writes one PDF; its `kind` says what goes in it.
-The pages refer to the 40-page issue of 17.10.2026; see
+Per team, the config lists which of these PDFs to write. The pages refer to the 40-page issue of 17.10.2026; see
 [docs/automation.md](docs/automation.md) for the full page-by-page
 inventory, including what stays manual.
 
-| Kind | Content | Programme page | Source |
+| PDF | Content | Programme page | Source |
 | --- | --- | --- | --- |
 | `spieltage` | previous, current and next matchday with results | Aktuelle Spieltage (15, 31) | BFV |
 | `tabelle` | league table with club logos, goals and promotion/relegation zones in colour | Tabelle (13, 29, 37) | BFV |
@@ -64,9 +63,12 @@ start (*More info → Run anyway*). For Linux and macOS, see
 ### 2. Write the config
 
 Copy `stadionzeitung.example.yaml` to `stadionzeitung.yaml` next to the
-`.exe`. The example is FC Sturm Hauzenberg's complete setup: every PDF of
-the programme, each commented with the page it fills. Adjust `outDir`, and
-for another club the URLs.
+`.exe`. The example is FC Sturm Hauzenberg's complete setup. Adjust
+`outDir`, and for another club the addresses.
+
+Each team needs its bfv.de page, plus its FuPa page for the FuPa PDFs.
+Everything else (league, table, opponent, team name) is looked up from
+there. Then list the PDFs you want:
 
 ```yaml
 outDir: C:/Users/<user>/OneDrive/Stadionzeitung/Dateien
@@ -74,24 +76,27 @@ fonts:
   regular: C:/Windows/Fonts/calibri.ttf
   bold: C:/Windows/Fonts/calibrib.ttf
 
+club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
+jugend: [ergebnisse, vorschau]
+
 teams:
-  - file: Tabelle-H1.pdf              # Tabelle (S. 13)
-    kind: tabelle
-    league: https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
-    highlight: Hauzenberg
+  H1:
+    bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
+    fupa: https://www.fupa.net/team/fc-sturm-hauzenberg-m1
+    pdfs: [spieltage, tabelle, spielplan, torjaeger, kader, liga-torjaeger, schiedsrichter]
+    gast: [kader, torjaeger]
+  H2:
+    bfv: https://www.bfv.de/mannschaften/fc-sturm-hauzenberg-2/02T8FR5G5O000000VS5489BRVSH2JAIF
+    pdfs: [spieltage, tabelle]
 ```
 
-The config is YAML: one `- file: …` block per PDF, `#` starts a comment, and
-indentation matters (spaces, not tabs). A misspelt key is reported as an
-error. JSON configs work too.
+That writes `Spielplan-H1.pdf`, `Tabelle-H1.pdf`, …, `Kader-H1-Gast.pdf`,
+`Spielplan-H2.pdf`, `Tabelle-H2.pdf`, `Jugend-Ergebnisse.pdf` and
+`Jugend-Vorschau.pdf`; see [Config reference](#config-reference).
 
-- `outDir`: the folder the InDesign document links its graphics from. It must
-  exist. Write the path as it is (`C:\Users\…` or `C:/Users/…`); only inside
-  "double quotes" must backslashes be doubled. Relative paths are resolved
-  against the config file.
-- `fonts`: TrueType files for regular and bold text, usually the layout's
-  font. Set both or neither; without them the built-in Go font is used.
-- `teams`: the PDFs, see [Config entries](#config-entries).
+The config is YAML: `#` starts a comment, lists are written `[a, b]`, and
+indentation matters (spaces, not tabs). A misspelt key is reported as an
+error.
 
 ### 3. Place the PDFs in InDesign (once)
 
@@ -141,54 +146,66 @@ pause
 3. Check the pages, fill in what stays manual (Grußwort, assistant referees,
    Macher des Spiels, …), then export or print as usual.
 
-## Config entries
+## Config reference
 
-Every entry has a `file` (the PDF's name in `outDir`) and a `kind`
-(default `spieltage`). What else it needs depends on the kind:
+**Top level**
 
-| Kind | Needs | Options |
-| --- | --- | --- |
-| `spieltage`, `tabelle` | `league` | `highlight` (tabelle) |
-| `spielplan` | `team` | |
-| `torjaeger` | `team` or `fupa` | `top`, `opponent` |
-| `jugend-ergebnisse`, `jugend-vorschau` | `club` | `days` |
-| `kader` | `fupa` | `opponent`, `allPlayers`, `roles` |
-| `liga-torjaeger` | `fupa` | `top` |
-| `schiedsrichter` | `fupa` | |
-
-Where to find the addresses on bfv.de:
-
-- `league`: the league's page under *Ergebnisse*, e.g.
-  `https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G`
-  (it ends in `…-G`).
-- `team`: the team's page, linked from the club page under *Mannschaften*
-  or from a team name on the league page, e.g.
-  `https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R`.
-- `club`: the club's page, e.g.
+- `outDir`: the folder the InDesign document links its graphics from. It
+  must exist. Write the path as it is (`C:\Users\…` or `C:/Users/…`); only
+  inside "double quotes" must backslashes be doubled. Relative paths are
+  resolved against the config file.
+- `fonts`: `regular` and `bold` TrueType files, usually the layout's font.
+  Set both or neither; without them the built-in Go font is used.
+- `club`: the club's bfv.de page, e.g.
   `https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I`.
+  Only needed for `jugend`.
+- `jugend`: `ergebnisse` (last days' results of all youth teams) and/or
+  `vorschau` (coming days' matches), written as `Jugend-Ergebnisse.pdf` and
+  `Jugend-Vorschau.pdf`.
+- `days`: how many days back or ahead `jugend` covers (default 7).
+- `teams`: one block per team. Its name (e.g. `H1`) becomes part of the file
+  names, so use letters, digits, `-` and `_`.
 
-Options:
+**Per team**
 
-- `highlight`: table rows of teams whose name contains it are set in bold,
-  e.g. `Hauzenberg` for the club's own teams.
-- `top`: how many scorers (default 3); anyone tied with the last is listed
-  too, as the programme does.
-- `opponent: true`: instead of the team itself, use its next league
-  opponent (the first league match today or later). Generated before a
-  home game, that is the guest.
-- `days`: how far back (`jugend-ergebnisse`) or ahead (`jugend-vorschau`)
-  to list matches (default 7).
-- `allPlayers`, `roles`: see [FuPa](#fupa).
+- `bfv`: the team's bfv.de page, linked from the club page under
+  *Mannschaften* or from a team name on the league page, e.g.
+  `https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R`.
+  Its league, and the matchdays, table and opponent, are found from there.
+- `fupa`: the team's FuPa page, see [FuPa](#fupa).
+- `pdfs`: which PDFs to write for the team:
+
+  | PDF | File | Needs |
+  | --- | --- | --- |
+  | `spieltage` | `Spielplan-<Team>.pdf` | `bfv` |
+  | `tabelle` | `Tabelle-<Team>.pdf` | `bfv` |
+  | `spielplan` | `Saisonspielplan-<Team>.pdf` | `bfv` |
+  | `torjaeger` | `Torjaeger-<Team>.pdf` | `bfv` or `fupa` |
+  | `kader` | `Kader-<Team>.pdf` | `fupa` |
+  | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `fupa` |
+  | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `fupa` |
+
+  The matchdays are named `Spielplan-…`, the name the Stadionzeitung's
+  layout has always linked them by; the season schedule is
+  `Saisonspielplan-…`.
+- `gast`: `kader` and/or `torjaeger` for the team's next league opponent
+  (the first league match today or later), written as
+  `Kader-<Team>-Gast.pdf` and `Torjaeger-<Team>-Gast.pdf`. Generated before
+  a home game, that is the guest. The guest's Kader lists all its players
+  and only its coaches.
+- `top`: how many scorers `torjaeger` and `liga-torjaeger` list (default
+  3); anyone tied with the last is listed too, as the programme does.
+- `roles`, `allPlayers`: for the team's `kader`, see [FuPa](#fupa).
 
 Notes:
 
 - The current matchday is the one running today (through its last
   scheduled day) or, between matchdays, the next one.
-- `torjaeger` from BFV needs the club to publish its squad on bfv.de; many
-  don't. With `fupa` instead of `team` it reads FuPa, which also covers
-  those clubs.
-- The `jugend` kinds find the club's teams through the links on its bfv.de
-  page; a team not linked there is missed.
+- In the table, the team's own row is set in bold.
+- `torjaeger` reads FuPa when the team has `fupa`, else BFV. BFV only has
+  scorers for clubs that publish their squad on bfv.de; many don't.
+- `jugend` finds the club's teams through the links on its bfv.de page; a
+  team not linked there is missed.
 - Team names are spelt as BFV has them, e.g. "(SG) Haag 1/Hauzenberg 3".
 
 ## FuPa
@@ -200,9 +217,10 @@ scorers or referees, and some clubs keep their squad private there.
 > **Permission required.** FuPa's
 > [terms of use](https://www.fupa.net/about/terms-of-use) (§4.1.4) forbid
 > downloading or reusing its data without FuPa's prior written consent.
-> Only configure FuPa entries once you have it. The tool contacts FuPa only
-> for entries with a `fupa` team and identifies itself in its requests. In
-> the example config, all FuPa entries are in one block at the end.
+> Only add `fupa` to a team once you have it. The tool contacts FuPa only
+> for teams with `fupa` and identifies itself in its requests. Without
+> `fupa`, leave `kader`, `liga-torjaeger` and `schiedsrichter` out of the
+> team's `pdfs` and `kader` out of its `gast`.
 
 `fupa` is the team's FuPa page, e.g.
 `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`, or just
@@ -214,10 +232,11 @@ with the suffix; update it each summer.
   Abwehr, Mittelfeld, Angriff), sorted by last name, the captain marked
   "(K)". FuPa squads often include players of the club's other teams
   without a shirt number, so only players with a number are listed, unless
-  `allPlayers: true` (useful for clubs that number nobody or only part of
-  their squad). `roles` limits the staff to these roles as FuPa names them,
-  e.g. `[Trainer, Torwart-Trainer, Betreuer]`; without it all are listed.
-- `torjaeger` with `fupa` reads the goals from FuPa.
+  the team sets `allPlayers: true`. `roles` limits the staff to these roles
+  as FuPa names them, e.g. `[Trainer, Torwart-Trainer, Betreuer]`; without
+  it all are listed. A guest's Kader always lists all players and only the
+  coaches.
+- `torjaeger` reads the goals from FuPa when the team has `fupa`.
 - `liga-torjaeger` lists the top scorers of the team's league, e.g.
   "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".
 - `schiedsrichter` gives the referee and their club, e.g. "Marijo Kraljic
@@ -231,13 +250,15 @@ For trying things out, the tool also writes one PDF without a config:
 
 ```sh
 stadionzeitung-automation -kind tabelle -o tabelle.pdf \
-  https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
+  https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
 ```
 
-The argument is what the kind needs (see [Config entries](#config-entries)):
-a league, team or club URL, a FuPa team, or the bare id. Flags:
+The argument is the bfv.de team page (for `spieltage` and `tabelle` a league
+page works too), the club page for `jugend-ergebnisse` and
+`jugend-vorschau`, or the FuPa team for `kader`, `liga-torjaeger` and
+`schiedsrichter`. Flags:
 
-- `-kind` what to write (default `spieltage`)
+- `-kind` the PDF to write, as in `pdfs` (default `spieltage`)
 - `-o` output file (default named after the content, e.g.
   `Landesliga-Mitte-spieltag-16.pdf`)
 - `-matchday N` for `spieltage`: centre on matchday N instead of the

@@ -21,14 +21,14 @@ func TestSquadRows(t *testing.T) {
 			{FirstName: "Neu", LastName: "Ling", Position: "Libero", Number: 5},
 		},
 	}
-	got := fmt.Sprint(squadRows(s, nil, false))
+	got := fmt.Sprint(squadRows(s, func(string) bool { return true }, false))
 	want := "[{Trainer: Matthias Süß, Dominik Schwarz false} {TW-Trainer: Pascal Keese false} {Sportdirektor: Alexander Geiger false} " +
 		"{Tor: Christoph Obermüller (K), Stefan Schulz true} {Angriff: Joris Wagner false} {Weitere: Neu Ling false}]"
 	if got != want {
 		t.Errorf("squadRows =\n%s\nwant\n%s", got, want)
 	}
 	// Only coaches, and every player.
-	got = fmt.Sprint(squadRows(s, []string{"Trainer"}, true)[:2])
+	got = fmt.Sprint(squadRows(s, func(r string) bool { return r == "Trainer" }, true)[:2])
 	want = "[{Trainer: Matthias Süß, Dominik Schwarz false} {Tor: Michael Hellauer, Christoph Obermüller (K), Stefan Schulz true}]"
 	if got != want {
 		t.Errorf("squadRows(Trainer, all) =\n%s\nwant\n%s", got, want)
