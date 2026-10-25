@@ -18,16 +18,32 @@ drops straight into a frame.
 stadionzeitung-automation -config stadionzeitung.yaml
 ```
 
-> **Unofficial.** This tool is not affiliated with or endorsed by the
-> Bayerischer Fußball-Verband (BFV) or FuPa. It reads public bfv.de pages
-> and the widget API behind BFV's embeddable widgets, both of which can
-> change without notice and break the tool. Match data belongs to the BFV;
-> check its terms before publishing generated tables beyond your own club's
-> use.
+## Not affiliated with BFV or FuPa
+
+**Stadionzeitung Automation is an independent, unofficial project.** It is
+not affiliated with, endorsed, sponsored or supported by the Bayerischer
+Fußball-Verband e.V. (BFV) or by FuPa (fupa.net), nor connected to them in
+any other way. Neither of them is responsible for this program or for the
+PDFs it generates.
+
+> *Dieses Programm ist ein unabhängiges, inoffizielles Projekt. Es steht in
+> keiner Verbindung zum Bayerischen Fußball-Verband e.V. (BFV) oder zu FuPa
+> und wird von ihnen weder unterstützt noch empfohlen.*
+
+- The names BFV and FuPa only describe where the data comes from; they and
+  their logos belong to their owners.
+- The data belongs to the BFV and to FuPa. The tool reads public bfv.de
+  pages and the widget API behind BFV's embeddable widgets; check the BFV's
+  terms before publishing generated tables beyond your own club's use.
+  FuPa's terms require its written permission, see [FuPa](#fupa).
+- Neither source offers an official interface for this. Either can change
+  without notice and break the tool.
+- The program comes without warranty, see the [license](LICENSE).
 
 ## What it generates
 
-Per team, the config lists which of these PDFs to write. The pages refer to the 40-page issue of 17.10.2026; see
+Per team, the config lists which of these PDFs to write. The pages refer
+to the 40-page issue of 17.10.2026; see
 [docs/automation.md](docs/automation.md) for the full page-by-page
 inventory, including what stays manual.
 
