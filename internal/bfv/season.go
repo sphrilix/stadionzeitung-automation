@@ -70,3 +70,23 @@ func (c *Client) FetchSeason(ctx context.Context, teamID string) (Season, error)
 	})
 	return s, nil
 }
+
+// TeamInfo is a team's name and the league it plays in.
+type TeamInfo struct {
+	Name string
+	// CompoundID is the league's competition id, League its name.
+	CompoundID, League string
+}
+
+// FetchTeamInfo returns a team's name and league, so a team's bfv.de page
+// is enough to find its league's matchdays and table.
+func (c *Client) FetchTeamInfo(ctx context.Context, teamID string) (TeamInfo, error) {
+	d, err := c.teamMatches(ctx, teamID)
+	if err != nil {
+		return TeamInfo{}, err
+	}
+	if d.Team.CompoundID == "" {
+		return TeamInfo{}, fmt.Errorf("team %s plays in no league", teamID)
+	}
+	return TeamInfo{Name: d.Team.Name, CompoundID: d.Team.CompoundID, League: d.Team.CompetitionName}, nil
+}

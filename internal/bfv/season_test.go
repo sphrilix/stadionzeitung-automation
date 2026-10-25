@@ -45,3 +45,17 @@ func TestFetchSeasonWithoutLeague(t *testing.T) {
 		t.Error("expected an error for a team without a league")
 	}
 }
+
+func TestFetchTeamInfo(t *testing.T) {
+	c := serve(t, map[string]string{
+		"/widget/team/A/matches": `{"state":0,"data":{"team":{"name":"FC Sturm Hauzenberg","compoundId":"` + testCID + `","competitionName":"Landesliga Mitte"},"matches":[]}}`,
+		"/widget/team/F/matches": `{"state":0,"data":{"team":{"name":"Friends"},"matches":[]}}`,
+	})
+	info, err := c.FetchTeamInfo(context.Background(), "A")
+	if err != nil || info != (TeamInfo{Name: "FC Sturm Hauzenberg", CompoundID: testCID, League: "Landesliga Mitte"}) {
+		t.Errorf("FetchTeamInfo = %+v, %v", info, err)
+	}
+	if _, err := c.FetchTeamInfo(context.Background(), "F"); err == nil {
+		t.Error("expected an error for a team without a league")
+	}
+}

@@ -15,7 +15,7 @@ import (
 
 // buildFuPa builds the kinds read from FuPa: the squad, a team's or the
 // league's top scorers, and the referee of the next league match.
-func buildFuPa(ctx context.Context, c *fupa.Client, t team) (output, error) {
+func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 	slug, err := fupa.ParseTeam(t.FuPa)
 	if err != nil {
 		return output{}, err
@@ -77,7 +77,11 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t team) (output, error) {
 		}
 		return linesOutput("Torjäger "+tm.Name, lines), nil
 	}
-	rows := squadRows(squad, t.Roles, t.AllPlayers)
+	roles := func(role string) bool { return len(t.Roles) == 0 || slices.Contains(t.Roles, role) }
+	if t.coachesOnly {
+		roles = func(role string) bool { return strings.Contains(role, "Trainer") }
+	}
+	rows := squadRows(squad, roles, t.AllPlayers)
 	return output{
 		label: "Kader " + tm.Name,
 		name:  tm.Name + "-kader",
@@ -111,16 +115,16 @@ var shortRoles = map[string]string{
 	"Physiotherapeut": "Physio",
 }
 
-// squadRows lays out a squad as on the Kader pages: staff by role (only
-// the given roles, if any), then the players by position, sorted by last
-// name, the captain marked "(K)". Unless all is set, only players with a
-// shirt number are listed.
-func squadRows(s fupa.Squad, onlyRoles []string, all bool) []render.Row {
+// squadRows lays out a squad as on the Kader pages: the staff whose role
+// is wanted, by role, then the players by position, sorted by last name,
+// the captain marked "(K)". Unless all is set, only players with a shirt
+// number are listed.
+func squadRows(s fupa.Squad, wanted func(role string) bool, all bool) []render.Row {
 	var rows []render.Row
 	byRole := map[string][]string{}
 	var roles []string
 	for _, st := range s.Staff {
-		if len(onlyRoles) > 0 && !slices.Contains(onlyRoles, st.Role) {
+		if !wanted(st.Role) {
 			continue
 		}
 		if _, ok := byRole[st.Role]; !ok {
