@@ -39,17 +39,24 @@ type tableData struct {
 }
 
 type teamMatchesData struct {
+	Team struct {
+		Name            string `json:"name"`
+		CompoundID      string `json:"compoundId"`
+		CompetitionName string `json:"competitionName"`
+	} `json:"team"`
 	Matches []widgetMatch `json:"matches"`
 }
 
 type widgetMatch struct {
-	MatchID       string `json:"matchId"`
-	CompoundID    string `json:"compoundId"`
-	KickoffDate   string `json:"kickoffDate"`
-	KickoffTime   string `json:"kickoffTime"`
-	HomeTeamName  string `json:"homeTeamName"`
-	GuestTeamName string `json:"guestTeamName"`
-	Result        string `json:"result"`
+	MatchID         string `json:"matchId"`
+	CompoundID      string `json:"compoundId"`
+	CompetitionName string `json:"competitionName"`
+	TeamType        string `json:"teamType"`
+	KickoffDate     string `json:"kickoffDate"`
+	KickoffTime     string `json:"kickoffTime"`
+	HomeTeamName    string `json:"homeTeamName"`
+	GuestTeamName   string `json:"guestTeamName"`
+	Result          string `json:"result"`
 
 	HomeTeamPermanentID  string `json:"homeTeamPermanentId"`
 	GuestTeamPermanentID string `json:"guestTeamPermanentId"`
@@ -104,12 +111,22 @@ func (t tableData) teamIDs() []string {
 // TeamMatches returns a team's season fixtures within the given competition,
 // including byes.
 func (c *Client) TeamMatches(ctx context.Context, teamID, compoundID string) ([]Match, error) {
-	var r widgetResponse[teamMatchesData]
-	if err := c.widget(ctx, "/team/"+teamID+"/matches", &r); err != nil {
+	d, err := c.teamMatches(ctx, teamID)
+	if err != nil {
 		return nil, err
 	}
+	return d.matchesIn(compoundID)
+}
+
+func (c *Client) teamMatches(ctx context.Context, teamID string) (teamMatchesData, error) {
+	var r widgetResponse[teamMatchesData]
+	err := c.widget(ctx, "/team/"+teamID+"/matches", &r)
+	return r.Data, err
+}
+
+func (d teamMatchesData) matchesIn(compoundID string) ([]Match, error) {
 	var out []Match
-	for _, wm := range r.Data.Matches {
+	for _, wm := range d.Matches {
 		if wm.CompoundID != compoundID {
 			continue
 		}

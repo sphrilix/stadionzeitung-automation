@@ -95,23 +95,8 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 		return Window{}, err
 	}
 
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(maxParallel)
-
-	pages := make([]PageInfo, len(numbers))
-	for i, n := range numbers {
-		if n == first.Matchday {
-			pages[i] = first
-			continue
-		}
-		g.Go(func() error {
-			p, err := c.FetchPage(gctx, compoundID, n)
-			pages[i] = p
-			return err
-		})
-	}
-
-	if err := g.Wait(); err != nil {
+	pages, err := c.fetchPages(ctx, compoundID, numbers, first)
+	if err != nil {
 		return Window{}, err
 	}
 	matches, err := c.leagueMatches(ctx, compoundID, teams)
@@ -166,4 +151,24 @@ func (c *Client) leagueMatches(ctx context.Context, compoundID string, teams []s
 		})
 	}
 	return matches, g.Wait()
+}
+
+// fetchPages loads the pages of the given matchdays, reusing first (an
+// already loaded page) where it matches.
+func (c *Client) fetchPages(ctx context.Context, compoundID string, numbers []int, first PageInfo) ([]PageInfo, error) {
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(maxParallel)
+	pages := make([]PageInfo, len(numbers))
+	for i, n := range numbers {
+		if n == first.Matchday {
+			pages[i] = first
+			continue
+		}
+		g.Go(func() error {
+			p, err := c.FetchPage(gctx, compoundID, n)
+			pages[i] = p
+			return err
+		})
+	}
+	return pages, g.Wait()
 }

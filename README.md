@@ -15,18 +15,29 @@ bfv-miner -o ll.pdf \
 ```
 
 The argument is a bfv.de league URL containing the competition id (`…-G`) or
-the bare id. Flags:
+the bare id; for `-kind spielplan` and `-kind torjaeger` it is a team URL
+(`https://www.bfv.de/mannschaften/<name>/<id>`), for the `jugend` kinds a
+club URL (`https://www.bfv.de/vereine/<name>/<id>`), for the FuPa kinds a
+fupa.net team URL or slug, or the bare id. Flags:
 
 - `-o` output file (default named after the league and kind, e.g.
   `Landesliga-Mitte-spieltag-16.pdf`)
 - `-kind` what to write, see below (default `spieltage`)
 - `-matchday N` centre the window on matchday N instead of the current one
+- `-days N` for the `jugend` kinds, how many days back or ahead (default 7)
 - `-version` print the version
 
 | Kind | Content |
 | --- | --- |
 | `spieltage` | previous, current and next matchday with results |
 | `tabelle` | current table with club logos, goals, and promotion/relegation zones coloured |
+| `spielplan` | a team's season fixtures with matchday, kickoff and result, byes included; takes a team instead of a league |
+| `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)"; takes a team, needs its squad to be public on bfv.de |
+| `jugend-ergebnisse` | results of all the club's youth teams over the last days, grouped by age group and competition; takes a club |
+| `jugend-vorschau` | the same for the coming days, without results |
+| `kader` | a team's squad by position, captain marked, with coaches and staff; from [FuPa](#fupa) |
+| `liga-torjaeger` | the league's top scorers with their teams; from [FuPa](#fupa) |
+| `schiedsrichter` | the referee of the team's next league match; from [FuPa](#fupa) |
 
 > **Unofficial.** bfv-miner is not affiliated with or endorsed by the
 > Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
@@ -76,7 +87,18 @@ them in one go, so updating the fixtures is: run the tool, update the links.
      and copy the address; it ends in `…-G`). `kind` picks the content (see
      the table above; default `spieltage`). For a `tabelle`, `highlight`
      sets the rows of teams whose name contains it in bold, e.g.
-     `"Hauzenberg"` for the club's own teams.
+     `"Hauzenberg"` for the club's own teams. A `spielplan` takes `team`
+     instead of `league`: the team's page on bfv.de (on the club page under
+     *Mannschaften*, or a team name on the league page). So does
+     `torjaeger`, which lists the `top` scorers (default 3, plus anyone tied
+     with the last); with `"opponent": true` it lists those of the team's
+     next league opponent instead, for the guest page. Clubs that keep their
+     squad private on bfv.de have no scorers to list; that file then fails
+     with a message and the previous one is kept. The `jugend` kinds take
+     `club`, the club's page on bfv.de, and list the matches of every team
+     linked there, over the last (`jugend-ergebnisse`) or next
+     (`jugend-vorschau`) `days` days (default 7). The FuPa kinds take
+     `fupa`, see [FuPa](#fupa).
 3. **Generate the PDFs once** (see below), so there is something to place.
 4. **Place each PDF in InDesign.** Draw a graphic frame where the table goes,
    then *File → Place* (*Datei → Platzieren*), choose e.g.
@@ -117,10 +139,54 @@ them in one go, so updating the fixtures is: run the tool, update the links.
 2. Open the InDesign document. When it asks about modified links, choose
    *Update Links* (*Verknüpfungen aktualisieren*). If it is already open:
    *Window → Links* (*Fenster → Verknüpfungen*), select the generated PDFs
-   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`) with the yellow warning sign
-   and click
-   *Update Link* (*Verknüpfung aktualisieren*).
+   (e.g. `Spielplan-H*.pdf`, `Tabelle-H*.pdf`, `Jugend-*.pdf`) with the
+   yellow warning sign and click *Update Link*
+   (*Verknüpfung aktualisieren*).
 3. Check the tables, then export or print as usual.
+
+## FuPa
+
+BFV does not publish positions, shirt numbers, staff, the league's top
+scorers or referees, and some clubs keep their squad private there.
+[FuPa](https://www.fupa.net) has all of that.
+
+> **Permission required.** FuPa's
+> [terms of use](https://www.fupa.net/about/terms-of-use) (§4.1.4) forbid
+> downloading or reusing its data without FuPa's prior written consent.
+> Only configure FuPa once you have it. bfv-miner contacts FuPa only for
+> entries with a `fupa` team, and identifies itself in its requests.
+
+`fupa` is the team's FuPa page, e.g. `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`,
+or just its slug `fc-sturm-hauzenberg-m1`. Without the season suffix
+(`-2026-27`) it always means the current season.
+
+```json
+{"file": "Kader-H1.pdf", "kind": "kader", "fupa": "fc-sturm-hauzenberg-m1",
+ "roles": ["Trainer", "Torwart-Trainer", "Fitnesstrainer", "Betreuer"]},
+{"file": "Kader-Gast.pdf", "kind": "kader", "fupa": "fc-sturm-hauzenberg-m1",
+ "opponent": true, "allPlayers": true},
+{"file": "Torjaeger-Gast.pdf", "kind": "torjaeger", "fupa": "fc-sturm-hauzenberg-m1",
+ "opponent": true},
+{"file": "Liga-Torjaeger-H1.pdf", "kind": "liga-torjaeger", "fupa": "fc-sturm-hauzenberg-m1"},
+{"file": "Schiedsrichter.pdf", "kind": "schiedsrichter", "fupa": "fc-sturm-hauzenberg-m1"}
+```
+
+- `kader` lists staff by role, then the players by position (Tor, Abwehr,
+  Mittelfeld, Angriff), sorted by last name, the captain marked "(K)".
+  FuPa squads often include players of the club's other teams without a
+  shirt number, so only players with a number are listed, unless
+  `allPlayers` is set (useful when a club numbers nobody or only part of
+  its squad). `roles` limits the staff to these roles, as FuPa names
+  them; without it all are listed. `"opponent": true` shows the next
+  league opponent's squad, for the guest page.
+- `torjaeger` with `fupa` reads the goals from FuPa instead of BFV, so it
+  also works for clubs whose BFV squad is private.
+- `liga-torjaeger` lists the `top` scorers (default 3, plus ties) of the
+  team's league, e.g. "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".
+- `schiedsrichter` gives the referee and their club, e.g. "Marijo Kraljic
+  (SC Wörnsmühl)". FuPa lists the referee only, not the assistants, and
+  only once it is known, often shortly before the match; until then the
+  entry fails with a message and the previous PDF is kept.
 
 ## How it works
 

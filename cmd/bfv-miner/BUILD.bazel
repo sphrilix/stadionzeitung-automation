@@ -4,12 +4,14 @@ go_library(
     name = "bfv-miner_lib",
     srcs = [
         "config.go",
+        "fupa.go",
         "main.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/bfv-miner",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/bfv",
+        "//internal/fupa",
         "//internal/render",
     ],
 )
@@ -23,6 +25,10 @@ go_binary(
 
 go_test(
     name = "bfv-miner_test",
-    srcs = ["config_test.go"],
+    srcs = [
+        "config_test.go",
+        "fupa_test.go",
+    ],
     embed = [":bfv-miner_lib"],
+    deps = ["//internal/fupa"],
 )

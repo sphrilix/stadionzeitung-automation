@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "fupa",
+    srcs = [
+        "client.go",
+        "match.go",
+        "scorers.go",
+        "squad.go",
+    ],
+    importpath = "github.com/sphrilix/stadionzeitung-automation/internal/fupa",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "fupa_test",
+    srcs = ["client_test.go"],
+    embed = [":fupa"],
+)
