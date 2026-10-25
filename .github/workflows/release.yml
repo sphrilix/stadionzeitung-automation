@@ -55,13 +55,13 @@ jobs:
           disk-cache: ${{ github.workflow }}-${{ matrix.platform }}
           repository-cache: true
       - name: Build
-        run: bazel build --config=release --platforms=@rules_go//go/toolchain:${{ matrix.platform }} //cmd/bfv-miner
+        run: bazel build --config=release --platforms=@rules_go//go/toolchain:${{ matrix.platform }} //cmd/stadionzeitung-automation
       - name: Package
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
-          bin=$(bazel cquery --config=release --platforms=@rules_go//go/toolchain:$PLATFORM --output=files //cmd/bfv-miner)
-          name=bfv-miner_${TAG}_${PLATFORM}
+          bin=$(bazel cquery --config=release --platforms=@rules_go//go/toolchain:$PLATFORM --output=files //cmd/stadionzeitung-automation)
+          name=stadionzeitung-automation_${TAG}_${PLATFORM}
           mkdir -p "$name" dist
           cp "$bin" "$name/"
           cp README.md LICENSE stadionzeitung.example.json "$name/"
@@ -95,6 +95,6 @@ jobs:
           fi
           # Checksums cover every archive of the release, not just this run's.
           mkdir all
-          gh release download "$TAG" --pattern 'bfv-miner_*' --dir all
+          gh release download "$TAG" --pattern 'stadionzeitung-automation_*' --dir all
           (cd all && sha256sum *) > checksums.txt
           gh release upload "$TAG" --clobber checksums.txt

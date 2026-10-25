@@ -1,4 +1,4 @@
-# bfv-miner
+# Stadionzeitung Automation
 
 [![CI](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/sphrilix/stadionzeitung-automation/actions/workflows/ci.yml)
 
@@ -10,7 +10,7 @@ one running today (through its last scheduled day) or, between matchdays, the
 next one.
 
 ```sh
-bfv-miner -o ll.pdf \
+stadionzeitung-automation -o ll.pdf \
   https://www.bfv.de/ergebnisse/wettbewerb/-/0307PL23RO000007VS5489BUVT69HBT7-G
 ```
 
@@ -39,18 +39,19 @@ fupa.net team URL or slug, or the bare id. Flags:
 | `liga-torjaeger` | the league's top scorers with their teams; from [FuPa](#fupa) |
 | `schiedsrichter` | the referee of the team's next league match; from [FuPa](#fupa) |
 
-> **Unofficial.** bfv-miner is not affiliated with or endorsed by the
-> Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and the
-> widget API behind BFV's embeddable widgets, both of which can change
-> without notice and break the tool. Match data belongs to the BFV; check
-> its terms before publishing generated tables beyond your own club's use.
+> **Unofficial.** stadionzeitung-automation is not affiliated with or endorsed
+> by the Bayerischer Fußball-Verband (BFV). It reads public bfv.de pages and
+> the widget API behind BFV's embeddable widgets, both of which can change
+> without notice and break the tool. Match data belongs to the BFV; check its
+> terms before publishing generated tables beyond your own club's use.
 
 ## Installation
 
-Download `bfv-miner_<version>_windows_amd64.zip` from the
-[latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest) and
-unpack it. The archive holds `bfv-miner.exe`, this README, the license and
-`stadionzeitung.example.json`; `checksums.txt` lists the SHA-256 sums.
+Download `stadionzeitung-automation_<version>_windows_amd64.zip` from the
+[latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest)
+and unpack it. The archive holds `stadionzeitung-automation.exe`, this
+README, the license and `stadionzeitung.example.json`; `checksums.txt` lists
+the SHA-256 sums.
 
 Releases contain only the Windows build by default. Linux and macOS archives
 (`_linux_amd64`, `_linux_arm64`, `_darwin_amd64`, `_darwin_arm64`, as
@@ -59,7 +60,7 @@ source.
 
 The binaries are not signed. On Windows, SmartScreen may warn on the first
 start (*More info → Run anyway*); on macOS, clear the quarantine flag with
-`xattr -d com.apple.quarantine bfv-miner`.
+`xattr -d com.apple.quarantine stadionzeitung-automation`.
 
 ## Stadionzeitung (InDesign)
 
@@ -69,12 +70,13 @@ them in one go, so updating the fixtures is: run the tool, update the links.
 
 ### One-time setup
 
-1. **Get the tool.** Unpack `bfv-miner_<version>_windows_amd64.zip` from the
+1. **Get the tool.** Unpack
+   `stadionzeitung-automation_<version>_windows_amd64.zip` from the
    [latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest),
-   e.g. into `C:\bfv-miner\`, on the PC that has the InDesign document's
-   folder (e.g. synced via OneDrive).
+   e.g. into `C:\stadionzeitung-automation\`, on the PC that has the InDesign
+   document's folder (e.g. synced via OneDrive).
 2. **Write the config.** Copy `stadionzeitung.example.json` to
-   `stadionzeitung.json` next to `bfv-miner.exe` and adjust it:
+   `stadionzeitung.json` next to `stadionzeitung-automation.exe` and adjust it:
    - `outDir`: the folder the InDesign document links its graphics from. It
      must already exist. Use forward slashes (`C:/Users/…`) or doubled
      backslashes (`C:\\Users\\…`); relative paths are resolved against the
@@ -114,12 +116,12 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    (*Inhalt proportional anpassen*) and the reference point to top left. The
    table then refits when a matchday has more or fewer matches.
 6. **Optional: a double-click shortcut.** Save this as
-   `Spielplan aktualisieren.bat` next to `bfv-miner.exe`:
+   `Spielplan aktualisieren.bat` next to `stadionzeitung-automation.exe`:
 
    ```bat
    @echo off
    cd /d "%~dp0"
-   bfv-miner.exe -config stadionzeitung.json
+   stadionzeitung-automation.exe -config stadionzeitung.json
    pause
    ```
 
@@ -129,7 +131,7 @@ them in one go, so updating the fixtures is: run the tool, update the links.
    tool's folder
 
    ```sh
-   bfv-miner.exe -config stadionzeitung.json
+   stadionzeitung-automation.exe -config stadionzeitung.json
    ```
 
    It writes every PDF listed in the config with the previous, current and
@@ -153,8 +155,8 @@ scorers or referees, and some clubs keep their squad private there.
 > **Permission required.** FuPa's
 > [terms of use](https://www.fupa.net/about/terms-of-use) (§4.1.4) forbid
 > downloading or reusing its data without FuPa's prior written consent.
-> Only configure FuPa once you have it. bfv-miner contacts FuPa only for
-> entries with a `fupa` team, and identifies itself in its requests.
+> Only configure FuPa once you have it. stadionzeitung-automation contacts
+> FuPa only for entries with a `fupa` team, and identifies itself in its requests.
 
 `fupa` is the team's FuPa page, e.g. `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`,
 or just its slug `fc-sturm-hauzenberg-m1`. Without the season suffix
@@ -199,14 +201,14 @@ are joined by match id.
 Bazel (via bazelisk) downloads everything else, including the Go SDK.
 
 ```sh
-bazel run //cmd/bfv-miner -- <league URL>   # run from source
+bazel run //cmd/stadionzeitung-automation -- <league URL>   # run from source
 bazel test //...
 bazel run @rules_go//go -- mod tidy   # after changing imports
 bazel run //:gazelle                  # regenerate BUILD files
 
 # cross-compile, e.g. for Windows
-bazel build --platforms=@rules_go//go/toolchain:windows_amd64 //cmd/bfv-miner
-# → bazel-bin/cmd/bfv-miner/bfv-miner_/bfv-miner.exe
+bazel build --platforms=@rules_go//go/toolchain:windows_amd64 //cmd/stadionzeitung-automation
+# → bazel-bin/cmd/stadionzeitung-automation/stadionzeitung-automation_/stadionzeitung-automation.exe
 ```
 
 CI runs on every push to `main` and every pull request. It runs the tests,

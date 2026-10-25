@@ -21,7 +21,7 @@ import (
 const (
 	DefaultBase = "https://api.fupa.net/v1"
 	// userAgent identifies the tool, so FuPa can tell its requests apart.
-	userAgent = "bfv-miner (+https://github.com/sphrilix/stadionzeitung-automation)"
+	userAgent = "stadionzeitung-automation (+https://github.com/sphrilix/stadionzeitung-automation)"
 )
 
 // Client talks to the FuPa API.

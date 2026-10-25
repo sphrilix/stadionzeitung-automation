@@ -18,7 +18,7 @@ const (
 	DefaultBaseWidget = "https://widget-prod.bfv.de/api/service/widget/v1"
 	DefaultBaseLogo   = "https://app.bfv.de/export.media/-/action/getLogo/format/7/id/"
 
-	userAgent = "Mozilla/5.0 (X11; Linux x86_64) bfv-miner"
+	userAgent = "Mozilla/5.0 (X11; Linux x86_64) stadionzeitung-automation"
 	// maxParallel bounds concurrent requests against BFV.
 	maxParallel = 4
 )

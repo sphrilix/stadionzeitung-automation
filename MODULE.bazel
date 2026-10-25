@@ -1,4 +1,4 @@
-module(name = "bfv_miner")
+module(name = "stadionzeitung_automation")
 
 bazel_dep(name = "rules_go", version = "0.64.2")
 bazel_dep(name = "gazelle", version = "0.54.0")

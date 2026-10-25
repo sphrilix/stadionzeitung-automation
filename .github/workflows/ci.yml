@@ -23,4 +23,4 @@ jobs:
           bazel run //:gazelle
           git diff --exit-code || { echo "::error::run 'bazel run @rules_go//go -- mod tidy' and 'bazel run //:gazelle', then commit the result"; exit 1; }
       - name: Windows build
-        run: bazel build --platforms=@rules_go//go/toolchain:windows_amd64 //cmd/bfv-miner
+        run: bazel build --platforms=@rules_go//go/toolchain:windows_amd64 //cmd/stadionzeitung-automation
