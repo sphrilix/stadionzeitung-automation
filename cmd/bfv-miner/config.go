@@ -35,6 +35,12 @@ type team struct {
 	League string `json:"league"`
 	// Team is a bfv.de team URL or team id, for kinds about one team.
 	Team string `json:"team"`
+	// Top is how many scorers to list (ties with the last included);
+	// 0 means defaultTop.
+	Top int `json:"top"`
+	// Opponent lists the scorers of the team's next league opponent
+	// instead of the team's own.
+	Opponent bool `json:"opponent"`
 	// Highlight sets table rows of teams whose name contains it in bold.
 	Highlight string `json:"highlight"`
 
@@ -46,18 +52,26 @@ const (
 	kindMatchdays = "spieltage"
 	kindTable     = "tabelle"
 	kindSeason    = "spielplan"
+	kindScorers   = "torjaeger"
+
+	defaultTop = 3
 )
 
-var kinds = []string{kindMatchdays, kindTable, kindSeason}
+var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers}
+
+// teamKinds are the kinds about one team rather than a league.
+var teamKinds = []string{kindSeason, kindScorers}
 
 func (t team) validate() error {
 	switch {
 	case t.Kind != "" && !slices.Contains(kinds, t.Kind):
 		return fmt.Errorf("unknown kind %q (want one of %s)", t.Kind, strings.Join(kinds, ", "))
-	case t.Kind == kindSeason && t.Team == "":
+	case slices.Contains(teamKinds, t.Kind) && t.Team == "":
 		return errors.New("needs a team")
-	case t.Kind != kindSeason && t.League == "":
+	case !slices.Contains(teamKinds, t.Kind) && t.League == "":
 		return errors.New("needs a league")
+	case t.Top < 0:
+		return errors.New("top must not be negative")
 	}
 	return nil
 }

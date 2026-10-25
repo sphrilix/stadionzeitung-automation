@@ -1,8 +1,8 @@
 // Command bfv-miner writes PDFs with BFV league data: the previous, current
-// and next matchday, the table, or a team's season fixtures.
+// and next matchday, the table, or a team's season fixtures or top scorers.
 //
 //	bfv-miner [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
-//	bfv-miner [-o out.pdf] -kind spielplan <bfv.de team URL | team id>
+//	bfv-miner [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
 //	bfv-miner -config stadionzeitung.json
 //	bfv-miner -version
 package main
@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ func main() {
 	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan <bfv.de team URL | team id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "bfv-miner %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s -config <file.json>\n", version, os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -71,7 +72,7 @@ func main() {
 
 func runSingle(arg, out, kind string, matchday int) error {
 	t := team{Kind: kind, League: arg, matchday: matchday}
-	if kind == kindSeason {
+	if slices.Contains(teamKinds, kind) {
 		t = team{Kind: kind, Team: arg}
 	}
 	if err := t.validate(); err != nil {
@@ -129,6 +130,8 @@ func build(t team, c *bfv.Client) (output, error) {
 		return buildTable(ctx, c, t)
 	case kindSeason:
 		return buildSeason(ctx, c, t)
+	case kindScorers:
+		return buildScorers(ctx, c, t)
 	default:
 		return buildMatchdays(ctx, c, t)
 	}
@@ -197,6 +200,37 @@ func buildSeason(ctx context.Context, c *bfv.Client, t team) (output, error) {
 		name:  s.Team + "-spielplan",
 		render: func(out io.Writer, fonts render.Fonts) error {
 			return render.RenderSeason(out, s, fonts)
+		},
+	}, nil
+}
+
+func buildScorers(ctx context.Context, c *bfv.Client, t team) (output, error) {
+	teamID, err := parseTeam(t.Team)
+	if err != nil {
+		return output{}, err
+	}
+	who := "own team"
+	if t.Opponent {
+		opp, err := c.NextOpponent(ctx, teamID)
+		if err != nil {
+			return output{}, err
+		}
+		teamID, who = opp.ID, opp.Name
+	}
+	squad, err := c.FetchSquad(ctx, teamID)
+	if err != nil {
+		return output{}, fmt.Errorf("%s: %w", who, err)
+	}
+	top := t.Top
+	if top == 0 {
+		top = defaultTop
+	}
+	scorers := bfv.TopScorers(squad, top)
+	return output{
+		label: "Torjäger " + who,
+		name:  "torjaeger",
+		render: func(out io.Writer, fonts render.Fonts) error {
+			return render.RenderScorers(out, scorers, fonts)
 		},
 	}, nil
 }
