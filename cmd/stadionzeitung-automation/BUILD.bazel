@@ -6,6 +6,7 @@ go_library(
         "config.go",
         "fupa.go",
         "main.go",
+        "referee.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/stadionzeitung-automation",
     visibility = ["//visibility:private"],
@@ -29,8 +30,13 @@ go_test(
     srcs = [
         "config_test.go",
         "fupa_test.go",
+        "referee_test.go",
     ],
     data = ["//:stadionzeitung.example.yaml"],
     embed = [":stadionzeitung-automation_lib"],
-    deps = ["//internal/fupa"],
+    deps = [
+        "//internal/bfv",
+        "//internal/fupa",
+        "@org_golang_x_image//font/gofont/goregular",
+    ],
 )

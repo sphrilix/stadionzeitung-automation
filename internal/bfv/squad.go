@@ -53,17 +53,30 @@ type Team struct {
 	ID, Name string
 }
 
-// NextOpponent returns the opponent in a team's next league match: the
-// first one kicking off today or later, byes skipped. On a matchday that is
-// the opponent of the day.
+// NextOpponent returns the opponent in a team's next league match.
 func (c *Client) NextOpponent(ctx context.Context, teamID string) (Team, error) {
+	next, err := c.NextLeagueMatch(ctx, teamID)
+	switch {
+	case err != nil:
+		return Team{}, err
+	case next.HomeTeamID == teamID:
+		return Team{ID: next.GuestTeamID, Name: next.Guest}, nil
+	default:
+		return Team{ID: next.HomeTeamID, Name: next.Home}, nil
+	}
+}
+
+// NextLeagueMatch returns a team's next league match: the first one
+// kicking off today or later, byes skipped. On a matchday that is the
+// match of the day.
+func (c *Client) NextLeagueMatch(ctx context.Context, teamID string) (Match, error) {
 	d, err := c.teamMatches(ctx, teamID)
 	if err != nil {
-		return Team{}, err
+		return Match{}, err
 	}
 	matches, err := d.matchesIn(d.Team.CompoundID)
 	if err != nil {
-		return Team{}, err
+		return Match{}, err
 	}
 	now := time.Now
 	if c.Now != nil {
@@ -80,14 +93,10 @@ func (c *Client) NextOpponent(ctx context.Context, teamID string) (Team, error) 
 			next = &matches[i]
 		}
 	}
-	switch {
-	case next == nil:
-		return Team{}, fmt.Errorf("team %s has no league match left this season", teamID)
-	case next.HomeTeamID == teamID:
-		return Team{ID: next.GuestTeamID, Name: next.Guest}, nil
-	default:
-		return Team{ID: next.HomeTeamID, Name: next.Home}, nil
+	if next == nil {
+		return Match{}, fmt.Errorf("team %s has no league match left this season", teamID)
 	}
+	return *next, nil
 }
 
 // TopScorers returns the players with the most goals, best first: the top

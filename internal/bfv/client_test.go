@@ -35,7 +35,7 @@ func newTestServer(t *testing.T) *Client {
 	t.Helper()
 	routes := map[string]string{
 		// BFV's default page shows the last matchday played.
-		"/ergebnisse/wettbewerb/-/" + testCID:              pageHTML(1, 3, id("M1"), id("M2")),
+		"/ergebnisse/wettbewerb/-/" + testCID:                 pageHTML(1, 3, id("M1"), id("M2")),
 		"/ergebnisse/wettbewerb/-/" + testCID + "/spieltag/1": pageHTML(1, 3, id("M1"), id("M2")),
 		"/ergebnisse/wettbewerb/-/" + testCID + "/spieltag/2": pageHTML(2, 3, id("M3"), id("BYE")),
 		"/ergebnisse/wettbewerb/-/" + testCID + "/spieltag/3": pageHTML(3, 3, id("M4")),
@@ -73,7 +73,7 @@ func serve(t *testing.T, routes map[string]string) *Client {
 		fmt.Fprint(w, body)
 	}))
 	t.Cleanup(srv.Close)
-	return &Client{HTTP: srv.Client(), BaseWeb: srv.URL, BaseWidget: srv.URL + "/widget", BaseLogo: srv.URL + "/logo/"}
+	return &Client{HTTP: srv.Client(), BaseWeb: srv.URL, BaseWidget: srv.URL + "/widget", BaseLogo: srv.URL + "/logo/", BaseFont: srv.URL + "/font/"}
 }
 
 func TestFetchWindow(t *testing.T) {

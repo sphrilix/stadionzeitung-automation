@@ -5,8 +5,10 @@ go_library(
     srcs = [
         "client.go",
         "club.go",
+        "glyphs.go",
         "model.go",
         "page.go",
+        "referee.go",
         "season.go",
         "squad.go",
         "table.go",
@@ -14,7 +16,10 @@ go_library(
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/internal/bfv",
     visibility = ["//:__subpackages__"],
-    deps = ["@org_golang_x_sync//errgroup"],
+    deps = [
+        "@org_golang_x_image//font/sfnt",
+        "@org_golang_x_sync//errgroup",
+    ],
 )
 
 go_test(
@@ -23,10 +28,12 @@ go_test(
         "client_test.go",
         "club_test.go",
         "page_test.go",
+        "referee_test.go",
         "season_test.go",
         "squad_test.go",
         "table_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":bfv"],
+    deps = ["@org_golang_x_image//font/gofont/goregular"],
 )

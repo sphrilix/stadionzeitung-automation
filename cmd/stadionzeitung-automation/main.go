@@ -1,10 +1,10 @@
 // Command stadionzeitung-automation writes PDFs with BFV data: a league's previous, current
 // and next matchday or its table, a team's season fixtures or top scorers,
 // or a club's recent and upcoming youth matches. With FuPa's permission it
-// adds what BFV lacks: squads, league top scorers and referees.
+// adds what BFV lacks: squads, league top scorers and the referee's club.
 //
 //	stadionzeitung-automation [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
-//	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger <bfv.de team URL | team id>
+//	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger|schiedsrichter <bfv.de team URL | team id>
 //	stadionzeitung-automation [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
 //	stadionzeitung-automation [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
 //	stadionzeitung-automation -config stadionzeitung.yaml
@@ -48,7 +48,7 @@ func main() {
 	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger|schiedsrichter <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -79,6 +79,13 @@ func main() {
 func runSingle(arg, out, kind string, matchday, days int) error {
 	t := entry{Kind: kind, League: arg, matchday: matchday}
 	switch {
+	case kind == kindReferee:
+		// A bfv.de team, or else a FuPa one.
+		if _, err := parseTeam(arg); err == nil {
+			t = entry{Kind: kind, Team: arg}
+		} else {
+			t = entry{Kind: kind, FuPa: arg}
+		}
 	case !reCompoundID.MatchString(arg) && !slices.Contains(clubKinds, kind) && !slices.Contains(fupaKinds, kind):
 		// A team URL: its league is looked up.
 		t = entry{Kind: kind, Team: arg, matchday: matchday}
@@ -157,8 +164,10 @@ func build(t entry, c *bfv.Client) (output, error) {
 			}
 		}
 		return buildFuPa(ctx, fupa.NewClient(), t)
-	case kindSquad, kindLeagueTop, kindReferee:
+	case kindSquad, kindLeagueTop:
 		return buildFuPa(ctx, fupa.NewClient(), t)
+	case kindReferee:
+		return buildReferee(ctx, c, fupa.NewClient(), t)
 	case kindTableTop:
 		return buildTableScorers(ctx, c, fupa.NewClient(), t)
 	case kindScorers:

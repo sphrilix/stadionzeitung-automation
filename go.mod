@@ -8,3 +8,5 @@ require (
 	golang.org/x/sync v0.24.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require golang.org/x/text v0.43.0 // indirect
