@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 
@@ -14,8 +15,9 @@ import (
 )
 
 // buildFuPa builds the kinds read from FuPa: the squad, a team's or the
-// league's top scorers, and the team's whole page.
-func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
+// league's top scorers, and the team's whole page. The guest's page also
+// lists the officials of the match, read with bc.
+func buildFuPa(ctx context.Context, bc *bfv.Client, c *fupa.Client, t entry) (output, error) {
 	slug, err := fupa.ParseTeam(t.FuPa)
 	if err != nil {
 		return output{}, err
@@ -60,10 +62,26 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 		if lines := squadScorerLines(squad, top); len(lines) > 0 {
 			rows = append(rows, render.Row{Label: "Torjäger:", Text: strings.Join(lines, "\n"), Gap: true})
 		}
+		if t.Opponent {
+			// Officials are often appointed only days before the match; the
+			// page is still written without them.
+			if refs, _, err := refereeRows(ctx, bc, c, t); err == nil {
+				refs[0].Gap = true
+				rows = append(rows, refs...)
+			} else {
+				warnf("%s: no referees: %v", tm.Name, err)
+			}
+		}
 		g := render.TeamPage{Name: cmp.Or(t.Title, tm.Name), Rows: rows}
-		// Without a photo the page is still useful; the layout shows a gap.
+		// Without a photo the page is still useful; the layout shows a gap,
+		// or FuPa's placeholder if the team has none.
 		if photo, err := c.TeamPhoto(ctx, squad); err == nil {
 			g.Photo, g.PhotoCredit = photo, squad.PhotoCredit
+			if squad.PhotoPlaceholder {
+				warnf("%s has no team photo on FuPa; the page shows FuPa's placeholder", tm.Name)
+			}
+		} else {
+			warnf("%s: no team photo: %v", tm.Name, err)
 		}
 		return output{
 			label: "Seite " + g.Name,
@@ -115,6 +133,11 @@ func squadScorerLines(squad fupa.Squad, top int) []string {
 		lines = append(lines, render.ScorerLine(p))
 	}
 	return lines
+}
+
+// warnf reports a problem that does not stop a PDF from being written.
+func warnf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "warning: "+format+"\n", args...)
 }
 
 // isCoach reports whether a FuPa staff role is a coach's, e.g. "Trainer",

@@ -149,8 +149,8 @@ func TestTeamPhoto(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Photo != "https://image.fupa.net/team-image/abc/" || s.PhotoCredit != "Robert Geisler" {
-		t.Errorf("Photo, PhotoCredit = %q, %q", s.Photo, s.PhotoCredit)
+	if s.Photo != "https://image.fupa.net/team-image/abc/" || s.PhotoCredit != "Robert Geisler" || s.PhotoPlaceholder {
+		t.Errorf("Photo, PhotoCredit, PhotoPlaceholder = %q, %q, %v", s.Photo, s.PhotoCredit, s.PhotoPlaceholder)
 	}
 	// The photo is fetched from the address FuPa gives, here the test server.
 	s.Photo = c.Base + "/team-image/abc/"
@@ -160,5 +160,18 @@ func TestTeamPhoto(t *testing.T) {
 	}
 	if _, err := c.TeamPhoto(context.Background(), Squad{}); err == nil {
 		t.Error("expected an error without a photo")
+	}
+}
+
+func TestTeamPhotoPlaceholder(t *testing.T) {
+	c := serve(t, map[string]string{
+		"/teams/vornbach-m1-2026-27/squad": `{"players":[],"coaches":[],"info":{"teamImage":{"path":"https://image.fupa.net/team-image/xyz/","source":null,"svg":true}}}`,
+	})
+	s, err := c.Squad(context.Background(), "vornbach-m1-2026-27")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Photo != "https://image.fupa.net/team-image/xyz/" || !s.PhotoPlaceholder {
+		t.Errorf("Photo, PhotoPlaceholder = %q, %v", s.Photo, s.PhotoPlaceholder)
 	}
 }
