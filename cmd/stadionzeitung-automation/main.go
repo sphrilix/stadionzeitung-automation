@@ -12,6 +12,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -45,7 +46,7 @@ func main() {
 	out := flag.String("o", "", "output PDF (default: named after the league and kind)")
 	matchday := flag.Int("matchday", 0, "treat this matchday as the current one (default: the matchday running today, else the next one)")
 	kind := flag.String("kind", kindMatchdays, "what to write: "+strings.Join(kinds, ", "))
-	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default %d)", defaultDays))
+	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default: %d, more weeks up to %d while they fit the page)", defaultDays, maxYouthDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger|schiedsrichter <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
@@ -328,19 +329,18 @@ func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	if err != nil {
 		return output{}, err
 	}
-	days := t.Days
-	if days == 0 {
-		days = defaultDays
-	}
+	// Without a fixed number of days, up to maxYouthDays are fetched and
+	// fillYouthPage keeps as many weeks as fit the page.
+	results := t.Kind == kindYouthDone
+	days := cmp.Or(t.Days, maxYouthDays)
 	// Results: the last days up to now; preview: from now through the
 	// coming days.
 	now := time.Now()
 	y, m, d := now.Date()
 	today := time.Date(y, m, d, 0, 0, 0, 0, now.Location())
-	from, to := today.AddDate(0, 0, -days), now
+	from, to := youthWindow(today, now, days, results)
 	label := "Jugend-Ergebnisse"
-	if t.Kind == kindYouthNext {
-		from, to = now, today.AddDate(0, 0, days+1)
+	if !results {
 		label = "Jugend-Vorschau"
 	}
 	all, err := c.FetchClubMatches(ctx, clubID, from, to)
@@ -353,13 +353,52 @@ func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 			youth = append(youth, m)
 		}
 	}
+	if t.Days == 0 {
+		youth, days = fillYouthPage(youth, today, now, results, render.ClubMatchesFit)
+	}
 	return output{
-		label: fmt.Sprintf("%s, %d Spiele", label, len(youth)),
+		label: fmt.Sprintf("%s, %d Tage, %d Spiele", label, days, len(youth)),
 		name:  strings.ToLower(label),
 		render: func(out io.Writer, fonts render.Fonts) error {
-			return render.RenderClubMatches(out, youth, t.Kind == kindYouthDone, fonts)
+			return render.RenderClubMatches(out, youth, results, fonts)
 		},
 	}, nil
+}
+
+// youthWindow is the time span of a youth page covering days: for results
+// the last days up to now, for a preview from now through the coming days.
+func youthWindow(today, now time.Time, days int, results bool) (from, to time.Time) {
+	if results {
+		return today.AddDate(0, 0, -days), now
+	}
+	return now, today.AddDate(0, 0, days+1)
+}
+
+// fillYouthPage keeps the matches of the first defaultDays and adds a week
+// at a time while they still fit the page at natural size, so that a quiet
+// week brings in older results or later fixtures instead of wide gaps. It
+// returns the matches kept and the days they cover.
+func fillYouthPage(matches []bfv.ClubMatch, today, now time.Time, results bool, fits func([]bfv.ClubMatch) bool) ([]bfv.ClubMatch, int) {
+	within := func(days int) []bfv.ClubMatch {
+		from, to := youthWindow(today, now, days, results)
+		var out []bfv.ClubMatch
+		for _, m := range matches {
+			if !m.Kickoff.Before(from) && m.Kickoff.Before(to) {
+				out = append(out, m)
+			}
+		}
+		return out
+	}
+	days := defaultDays
+	kept := within(days)
+	for days+7 <= maxYouthDays {
+		more := within(days + 7)
+		if !fits(more) {
+			break
+		}
+		kept, days = more, days+7
+	}
+	return kept, days
 }
 
 func write(path string, o output, fonts render.Fonts) error {

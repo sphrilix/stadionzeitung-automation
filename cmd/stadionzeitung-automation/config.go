@@ -32,7 +32,8 @@ type config struct {
 	// Jugend lists the club-wide youth PDFs: "ergebnisse", "vorschau".
 	Jugend []string `json:"jugend"`
 	// Days is how far back (ergebnisse) or ahead (vorschau) the youth PDFs
-	// list matches; 0 means defaultDays.
+	// list matches; 0 means defaultDays, plus more weeks up to maxYouthDays
+	// while they fit the page.
 	Days int `json:"days"`
 	// Teams maps a short name used in the file names, e.g. "H1", to a team.
 	Teams map[string]teamConfig `json:"teams"`
@@ -119,6 +120,9 @@ const (
 
 	defaultTop  = 3
 	defaultDays = 7
+	// maxYouthDays is how far a youth page reaches at most when filling
+	// the page on a quiet weekend.
+	maxYouthDays = 28
 )
 
 var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext,

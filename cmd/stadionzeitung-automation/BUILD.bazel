@@ -31,6 +31,7 @@ go_test(
         "config_test.go",
         "fupa_test.go",
         "referee_test.go",
+        "youth_test.go",
     ],
     data = ["//:stadionzeitung.example.yaml"],
     embed = [":stadionzeitung-automation_lib"],
