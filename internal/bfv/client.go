@@ -17,6 +17,7 @@ const (
 	DefaultBaseWeb    = "https://www.bfv.de"
 	DefaultBaseWidget = "https://widget-prod.bfv.de/api/service/widget/v1"
 	DefaultBaseLogo   = "https://app.bfv.de/export.media/-/action/getLogo/format/7/id/"
+	DefaultBaseFont   = "https://app.bfv.de/export.fontface/-/format/ttf/id/"
 
 	userAgent = "Mozilla/5.0 (X11; Linux x86_64) stadionzeitung-automation"
 	// maxParallel bounds concurrent requests against BFV.
@@ -30,13 +31,16 @@ type Client struct {
 	BaseWidget string
 	// BaseLogo is prefixed to a club ID to get its logo.
 	BaseLogo string
+	// BaseFont is prefixed to the ID of a font bfv.de obfuscates its pages
+	// with to get that font.
+	BaseFont string
 	// Now returns the current time; nil means time.Now.
 	Now func() time.Time
 }
 
 // NewClient returns a Client for the production BFV endpoints.
 func NewClient() *Client {
-	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget, BaseLogo: DefaultBaseLogo}
+	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget, BaseLogo: DefaultBaseLogo, BaseFont: DefaultBaseFont}
 }
 
 func (c *Client) get(ctx context.Context, url string) ([]byte, error) {

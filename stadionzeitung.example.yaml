@@ -26,12 +26,13 @@ jugend: [ergebnisse, vorschau]
 #   tabelle    league table                          Tabelle-<Team>.pdf
 #   spielplan  season schedule                       Saisonspielplan-<Team>.pdf
 #   torjaeger  top scorers (from FuPa if set)        Torjaeger-<Team>.pdf
+#   schiedsrichter  referee and assistants of the next match, with
+#              the referee's club from FuPa if set   Schiedsrichter-<Team>.pdf
 # and from FuPa, only with FuPa's written permission (see the README):
 #   kader              squad with coaches and staff  Kader-<Team>.pdf
 #   liga-torjaeger     top scorers of the league     Liga-Torjaeger-<Team>.pdf
 #   tabelle-torjaeger  table with the league's top   Tabelle-Torjaeger-<Team>.pdf
 #                      scorers below (S. 13, 29)
-#   schiedsrichter     referee of the next match     Schiedsrichter-<Team>.pdf
 #   seite              the team's whole page: name, team photo, staff,
 #                      squad and top scorers (S. 11, 27)  Seite-<Team>.pdf
 # name: the headline of the team's seite (default: its name on BFV).

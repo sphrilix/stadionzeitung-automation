@@ -129,7 +129,7 @@ var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYout
 var (
 	teamKinds = []string{kindSeason, kindScorers}
 	clubKinds = []string{kindYouthDone, kindYouthNext}
-	fupaKinds = []string{kindSquad, kindLeagueTop, kindReferee, kindTeamPage}
+	fupaKinds = []string{kindSquad, kindLeagueTop, kindTeamPage}
 	// gastKinds can be written for a team's next opponent.
 	gastKinds = []string{kindSquad, kindScorers, kindTeamPage}
 )
@@ -163,6 +163,10 @@ func (e entry) validate() error {
 	case slices.Contains(fupaKinds, e.Kind):
 		if e.FuPa == "" {
 			return errors.New("needs a fupa team")
+		}
+	case e.Kind == kindReferee:
+		if e.Team == "" && e.FuPa == "" {
+			return errors.New("needs a bfv team or a fupa team")
 		}
 	case e.Kind == kindTableTop:
 		if e.FuPa == "" || (e.League == "" && e.Team == "") {

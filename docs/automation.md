@@ -15,7 +15,9 @@ Data sources used:
 - **bfv.de pages**: league, club and match pages. Their structure
   (matchday numbers, match and team IDs) is readable, but names, dates and
   results are obfuscated with a per-request font, so the readable details
-  always come from the widget API.
+  come from the widget API. Only the officials, which the widget API
+  lacks, are decoded from a match page: the font names each glyph after
+  the character it draws.
 - **FuPa API** (`api.fupa.net/v1`): fills what BFV lacks. FuPa's terms of
   use require its **written permission** to reuse the data; the FuPa kinds
   are only for use once that is granted.
@@ -34,7 +36,7 @@ Data sources used:
 | 5, 11, 27 | Kader: staff, players by position, captain | `kader` (+ `opponent` for the guest) | FuPa `/teams/{slug}/squad` | #7 |
 | 5 | Torjäger of a guest with a private BFV squad | `torjaeger` + `fupa` | FuPa squad | #7 |
 | 13, 29 | Top-Torjäger of the league | `liga-torjaeger` | FuPa `/competitions/{slug}/seasons/current/scorers` | #7 |
-| 3, 5 | Referee | `schiedsrichter` | FuPa `/matches/{slug}` | #7 |
+| 3, 5 | Referee and assistant referees, the referee's club | `schiedsrichter` | bfv.de match page (decoded with its obfuscation font); club from FuPa `/matches/{slug}` | #7 |
 | 5 | The whole guest page (name, team photo, coaches, squad, scorers) in one PDF | `gast: [seite]` | FuPa squad and team photo | |
 | 11, 27 | The club's own team pages (name, team photo, staff, squad, scorers) in one PDF | `pdfs: [seite]` | FuPa squad and team photo | |
 | 13, 29 | Table and Top-Torjäger in one PDF | `tabelle-torjaeger` | BFV table + FuPa scorers | |
@@ -44,8 +46,10 @@ Limits:
 - **Squads can be private on BFV.** `torjaeger` from BFV needs the club to
   publish its squad on bfv.de; in the Landesliga 8 of 18 clubs don't (e.g.
   SV Türk Gücü Straubing). With a `fupa` team it reads FuPa instead.
-- **Referees:** FuPa lists the referee only, not the assistants, and only
-  once known, often shortly before the match.
+- **Referees:** BFV lists the referee and assistants, but not the
+  referee's club; that comes from FuPa if the team has it. FuPa alone
+  lists the referee only. Either knows the officials only once they are
+  appointed.
 - **Teams not linked from the club page** are missed by the `jugend`
   kinds; in the sample issue that was one F-Junioren tournament game.
 - **Team names** are BFV's spelling, e.g. "(SG) Haag 1/Hauzenberg 3"
@@ -65,7 +69,6 @@ Data that is available but not generated yet:
 
 | Page | Block | Why |
 | --- | --- | --- |
-| 3, 5 | Assistant referees | neither BFV nor FuPa publishes them |
 | 3 | Grußwort text | written by the board |
 | 19 | Macher des Spiels | editorial choice |
 | 24, 25, 39 | Sturm-Freunde, sponsor thanks, Impressum | club content |

@@ -12,7 +12,7 @@ The InDesign document places each PDF as a linked graphic. Before every
 issue, one command regenerates them all from current data, and InDesign
 picks up the changes when you update its links. Each PDF has no heading
 (the layout provides that), and its page is cropped to the content, so it
-drops straight into a frame.
+drops straight into a frame. The youth pages instead fill a whole page.
 
 ```sh
 stadionzeitung-automation -config stadionzeitung.yaml
@@ -53,13 +53,13 @@ inventory, including what stays manual.
 | `tabelle` | league table with club logos, goals and promotion/relegation zones in colour | Tabelle (13, 29, 37) | BFV |
 | `spielplan` | a team's season fixtures: matchday, date, kickoff, result, byes included | Saisonspielplan (17, 33, 35) | BFV |
 | `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)" | Kader (11, 27), guest (5) | BFV or FuPa |
-| `jugend-ergebnisse` | results of all the club's youth teams over the last days | Jugend (21) | BFV |
-| `jugend-vorschau` | the youth teams' upcoming matches | Jugend (23) | BFV |
+| `jugend-ergebnisse` | results of all the club's youth teams over the last days, as a whole page | Jugend (21) | BFV |
+| `jugend-vorschau` | the youth teams' upcoming matches, as a whole page | Jugend (23) | BFV |
 | `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa |
 | `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa |
 | `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV and FuPa |
 | `seite` | a team's whole page in one PDF: its name, team photo, staff, squad and top scorers, for the club's teams and the guest | Kader (11, 27), Gastmannschaft (5) | FuPa |
-| `schiedsrichter` | the referee of the next league match and their club | Grußwort (3), guest (5) | FuPa |
+| `schiedsrichter` | the referee and assistant referees of the next league match, with the referee's club from FuPa | Grußwort (3), guest (5) | BFV, FuPa for the club |
 
 The FuPa kinds need FuPa's written permission, see [FuPa](#fupa).
 
@@ -163,7 +163,7 @@ pause
    is already open: *Window → Links* (*Fenster → Verknüpfungen*), select the
    PDFs with the yellow warning sign, *Update Link*
    (*Verknüpfung aktualisieren*).
-3. Check the pages, fill in what stays manual (Grußwort, assistant referees,
+3. Check the pages, fill in what stays manual (Grußwort,
    Macher des Spiels, …), then export or print as usual.
 
 ## Config reference
@@ -181,7 +181,10 @@ pause
   Only needed for `jugend`.
 - `jugend`: `ergebnisse` (last days' results of all youth teams) and/or
   `vorschau` (coming days' matches), written as `Jugend-Ergebnisse.pdf` and
-  `Jugend-Vorschau.pdf`.
+  `Jugend-Vorschau.pdf`. Unlike the other PDFs, each one fills a whole
+  page: it has a page's proportions (A series, 160 × 226 mm), and its rows
+  grow on a quiet weekend and shrink on a busy one. Place it in a frame
+  covering the page's type area.
 - `days`: how many days back or ahead `jugend` covers (default 7).
 - `teams`: one block per team. Its name (e.g. `H1`) becomes part of the file
   names, so use letters, digits, `-` and `_`.
@@ -205,7 +208,7 @@ pause
   | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `fupa` |
   | `tabelle-torjaeger` | `Tabelle-Torjaeger-<Team>.pdf` | `bfv` and `fupa` |
   | `seite` | `Seite-<Team>.pdf` | `fupa` |
-  | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `fupa` |
+  | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `bfv` or `fupa` |
 
   The matchdays are named `Spielplan-…`, the name the Stadionzeitung's
   layout has always linked them by; the season schedule is
@@ -222,8 +225,8 @@ pause
 
   The guest's Kader lists all its players and only its coaches. The line
   above the name ("Unser heutiger Gast im …:") belongs in the layout, and
-  so does the referee section: `schiedsrichter` is its own PDF, as FuPa
-  often knows the referee only shortly before the match.
+  so does the referee section: `schiedsrichter` is its own PDF, as the
+  referee is often known only shortly before the match.
 - `name`: the headline of the team's `seite`, e.g. `FC Sturm Hauzenberg II`.
   Without it, the team's name on BFV is used ("FC Sturm Hauzenberg 2");
   FuPa names all of a club's teams alike.
@@ -245,7 +248,8 @@ Notes:
 ## FuPa
 
 BFV does not publish positions, shirt numbers, staff, a league's top
-scorers or referees, and some clubs keep their squad private there.
+scorers or the referee's club, and some clubs keep their squad private
+there.
 [FuPa](https://www.fupa.net) has all of that.
 
 > **Permission required.** FuPa's
@@ -253,9 +257,9 @@ scorers or referees, and some clubs keep their squad private there.
 > downloading or reusing its data without FuPa's prior written consent.
 > Only add `fupa` to a team once you have it. The tool contacts FuPa only
 > for teams with `fupa` and identifies itself in its requests. Without
-> `fupa`, leave `kader`, `liga-torjaeger`, `tabelle-torjaeger` and
-> `schiedsrichter` out of the team's `pdfs` (use `tabelle` instead), and
-> `seite` and `kader` out of its `gast`.
+> `fupa`, leave `kader`, `liga-torjaeger`, `tabelle-torjaeger` and `seite`
+> out of the team's `pdfs` (use `tabelle` instead), and `seite` and
+> `kader` out of its `gast`; `schiedsrichter` then comes from BFV alone.
 
 `fupa` is the team's FuPa page, e.g.
 `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`, or just
@@ -280,10 +284,32 @@ with the suffix; update it each summer.
 - `liga-torjaeger` (and the scorers in `tabelle-torjaeger`) lists the top
   scorers of the team's league, e.g.
   "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".
-- `schiedsrichter` gives the referee and their club, e.g. "Marijo Kraljic
-  (SC Wörnsmühl)". FuPa lists the referee only, not the assistants, and
-  only once known, often shortly before the match; until then the entry
-  fails with a message and the previous PDF is kept.
+- `schiedsrichter` adds the referee's club from FuPa, see
+  [Referees](#referees).
+
+## Referees
+
+`schiedsrichter` lists the referee and the assistant referees of the
+team's next league match (the first one today or later), as the match's
+bfv.de page lists them:
+
+```text
+Schiedsrichter: Marijo Kraljic (SC Wörnsmühl)
+Assistenten:    Moritz Breitruck, Dominik Von Maffei
+```
+
+It needs `bfv`, `fupa` or both:
+
+- With `bfv`, the officials come from BFV. BFV does not say which club the
+  referee is from; with `fupa` as well, the club is taken from FuPa when
+  FuPa names the same referee.
+- While BFV has no referee yet, a team with `fupa` falls back to FuPa,
+  which lists the referee only, not the assistants. The progress line then
+  says `(FuPa, BFV: …)`.
+- With `fupa` only, the referee comes from FuPa.
+
+Until BFV or FuPa knows the referee, the entry fails with a message and
+the previous PDF is kept.
 
 ## Single PDFs from the command line
 
@@ -296,8 +322,8 @@ stadionzeitung-automation -kind tabelle -o tabelle.pdf \
 
 The argument is the bfv.de team page (for `spieltage` and `tabelle` a league
 page works too), the club page for `jugend-ergebnisse` and
-`jugend-vorschau`, or the FuPa team for `kader`, `liga-torjaeger` and
-`schiedsrichter`. Flags:
+`jugend-vorschau`, or the FuPa team for `kader` and `liga-torjaeger`.
+`schiedsrichter` takes either. Flags:
 
 - `-kind` the PDF to write, as in `pdfs` (default `spieltage`)
 - `-o` output file (default named after the content, e.g.
@@ -321,7 +347,11 @@ page works too), the club page for `jugend-ergebnisse` and
 - **Scorers:** BFV's squad statistics, or FuPa's.
 - **Youth:** the club's teams from its bfv.de page, their matches from the
   widget API.
-- **Squads, league scorers, referees:** the FuPa API.
+- **Referees:** the bfv.de match page lists the referee and assistants in
+  an obfuscation font, like the league pages; the tool downloads that font
+  and reads each character from the name of the glyph that draws it. The
+  referee's club comes from the FuPa API.
+- **Squads, league scorers:** the FuPa API.
 
 ## Development
 

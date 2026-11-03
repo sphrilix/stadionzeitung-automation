@@ -14,7 +14,7 @@ import (
 )
 
 // buildFuPa builds the kinds read from FuPa: the squad, a team's or the
-// league's top scorers, and the referee of the next league match.
+// league's top scorers, and the team's whole page.
 func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 	slug, err := fupa.ParseTeam(t.FuPa)
 	if err != nil {
@@ -33,21 +33,6 @@ func buildFuPa(ctx context.Context, c *fupa.Client, t entry) (output, error) {
 			return output{}, err
 		}
 		return linesOutput("Liga-Torjäger", lines), nil
-
-	case kindReferee:
-		m, err := c.NextLeagueMatch(ctx, tm.Slug)
-		if err != nil {
-			return output{}, err
-		}
-		ref, err := c.Referee(ctx, m.Slug)
-		if err != nil {
-			return output{}, fmt.Errorf("%s - %s: %w", m.Home.Name, m.Away.Name, err)
-		}
-		line := ref.Name
-		if ref.Club != "" {
-			line += " (" + ref.Club + ")"
-		}
-		return linesOutput("Schiedsrichter", []string{line}), nil
 	}
 
 	// Kader, torjaeger and the guest page are about the team or its next
