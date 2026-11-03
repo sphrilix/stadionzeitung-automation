@@ -12,7 +12,7 @@ The InDesign document places each PDF as a linked graphic. Before every
 issue, one command regenerates them all from current data, and InDesign
 picks up the changes when you update its links. Each PDF has no heading
 (the layout provides that), and its page is cropped to the content, so it
-drops straight into a frame.
+drops straight into a frame. The youth pages instead fill a whole page.
 
 ```sh
 stadionzeitung-automation -config stadionzeitung.yaml
@@ -53,8 +53,8 @@ inventory, including what stays manual.
 | `tabelle` | league table with club logos, goals and promotion/relegation zones in colour | Tabelle (13, 29, 37) | BFV |
 | `spielplan` | a team's season fixtures: matchday, date, kickoff, result, byes included | Saisonspielplan (17, 33, 35) | BFV |
 | `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)" | Kader (11, 27), guest (5) | BFV or FuPa |
-| `jugend-ergebnisse` | results of all the club's youth teams over the last days | Jugend (21) | BFV |
-| `jugend-vorschau` | the youth teams' upcoming matches | Jugend (23) | BFV |
+| `jugend-ergebnisse` | results of all the club's youth teams over the last days, as a whole page | Jugend (21) | BFV |
+| `jugend-vorschau` | the youth teams' upcoming matches, as a whole page | Jugend (23) | BFV |
 | `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa |
 | `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa |
 | `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV and FuPa |
@@ -181,7 +181,10 @@ pause
   Only needed for `jugend`.
 - `jugend`: `ergebnisse` (last days' results of all youth teams) and/or
   `vorschau` (coming days' matches), written as `Jugend-Ergebnisse.pdf` and
-  `Jugend-Vorschau.pdf`.
+  `Jugend-Vorschau.pdf`. Unlike the other PDFs, each one fills a whole
+  page: it has a page's proportions (A series, 160 × 226 mm), and its rows
+  grow on a quiet weekend and shrink on a busy one. Place it in a frame
+  covering the page's type area.
 - `days`: how many days back or ahead `jugend` covers (default 7).
 - `teams`: one block per team. Its name (e.g. `H1`) becomes part of the file
   names, so use letters, digits, `-` and `_`.
