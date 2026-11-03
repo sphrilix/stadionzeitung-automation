@@ -185,7 +185,10 @@ pause
   page: it has a page's proportions (A series, 160 × 226 mm), and its rows
   grow on a quiet weekend and shrink on a busy one. Place it in a frame
   covering the page's type area.
-- `days`: how many days back or ahead `jugend` covers (default 7).
+- `days`: how many days back or ahead `jugend` covers. By default the
+  last (or next) 7 days, and on a quiet week another week at a time, up
+  to 4 weeks, as long as the matches still fit the page at normal size:
+  more results instead of wider gaps. Setting `days` fixes the span.
 - `teams`: one block per team. Its name (e.g. `H1`) becomes part of the file
   names, so use letters, digits, `-` and `_`.
 
@@ -330,7 +333,7 @@ page works too), the club page for `jugend-ergebnisse` and
   `Landesliga-Mitte-spieltag-16.pdf`)
 - `-matchday N` for `spieltage`: centre on matchday N instead of the
   current one
-- `-days N` for the `jugend` kinds (default 7)
+- `-days N` for the `jugend` kinds (default: 7, more weeks while they fit, see `days`)
 - `-version` print the version
 
 ## How it works

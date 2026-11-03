@@ -94,6 +94,12 @@ func RenderClubMatches(w io.Writer, matches []bfv.ClubMatch, results bool, fonts
 	return output(w, pdf)
 }
 
+// ClubMatchesFit reports whether matches fit a youth page at their natural
+// size, without shrinking the rows.
+func ClubMatchesFit(matches []bfv.ClubMatch) bool {
+	return layoutClubPage(groupClubMatches(matches)).scale >= 1
+}
+
 // clubLayout is the scale and heights in millimetres a youth page is set
 // with.
 type clubLayout struct {
