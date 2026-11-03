@@ -219,7 +219,7 @@ pause
 
   | PDF | File | Content |
   | --- | --- | --- |
-  | `seite` | `Seite-<Team>-Gast.pdf` | the guest's whole page, like a team's `seite` |
+  | `seite` | `Seite-<Team>-Gast.pdf` | the guest's whole page, like a team's `seite`, with the match's referees below (see [Referees](#referees)) |
   | `kader` | `Kader-<Team>-Gast.pdf` | coaches and squad only |
   | `torjaeger` | `Torjaeger-<Team>-Gast.pdf` | top scorers only |
 

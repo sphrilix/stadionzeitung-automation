@@ -16,6 +16,9 @@ type Squad struct {
 	// Photo is the team photo's address on FuPa's image server, empty if
 	// there is none; PhotoCredit names the photographer.
 	Photo, PhotoCredit string
+	// PhotoPlaceholder is set when the team has no photo of its own and
+	// Photo is FuPa's grey placeholder.
+	PhotoPlaceholder bool
 }
 
 // Player is a squad member.
@@ -63,6 +66,8 @@ func (c *Client) Squad(ctx context.Context, teamSlug string) (Squad, error) {
 			TeamImage *struct {
 				Path   string `json:"path"`
 				Source string `json:"source"`
+				// SVG marks FuPa's placeholder for a team without photo.
+				SVG bool `json:"svg"`
 			} `json:"teamImage"`
 		} `json:"info"`
 	}
@@ -72,6 +77,7 @@ func (c *Client) Squad(ctx context.Context, teamSlug string) (Squad, error) {
 	var s Squad
 	if img := r.Info.TeamImage; img != nil {
 		s.Photo, s.PhotoCredit = img.Path, strings.TrimSpace(img.Source)
+		s.PhotoPlaceholder = img.SVG
 	}
 	for _, p := range r.Players {
 		if p.IsDeactivated {

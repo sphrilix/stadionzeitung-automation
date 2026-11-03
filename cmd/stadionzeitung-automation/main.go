@@ -163,16 +163,16 @@ func build(t entry, c *bfv.Client) (output, error) {
 				}
 			}
 		}
-		return buildFuPa(ctx, fupa.NewClient(), t)
+		return buildFuPa(ctx, c, fupa.NewClient(), t)
 	case kindSquad, kindLeagueTop:
-		return buildFuPa(ctx, fupa.NewClient(), t)
+		return buildFuPa(ctx, c, fupa.NewClient(), t)
 	case kindReferee:
 		return buildReferee(ctx, c, fupa.NewClient(), t)
 	case kindTableTop:
 		return buildTableScorers(ctx, c, fupa.NewClient(), t)
 	case kindScorers:
 		if t.FuPa != "" {
-			return buildFuPa(ctx, fupa.NewClient(), t)
+			return buildFuPa(ctx, c, fupa.NewClient(), t)
 		}
 		return buildScorers(ctx, c, t)
 	default:
