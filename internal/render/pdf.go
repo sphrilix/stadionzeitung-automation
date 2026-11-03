@@ -153,7 +153,12 @@ func fitFontSize(pdf *fpdf.Fpdf, days []bfv.Matchday) float64 {
 // fitTexts returns the largest font size up to teamFontSize at which every
 // text, set in style, fits a column of the given width.
 func fitTexts(pdf *fpdf.Fpdf, style string, width float64, texts []string) float64 {
-	pdf.SetFont(fontFamily, style, teamFontSize)
+	return fitTextsUpTo(pdf, style, width, texts, teamFontSize)
+}
+
+// fitTextsUpTo is fitTexts with the largest size given.
+func fitTextsUpTo(pdf *fpdf.Fpdf, style string, width float64, texts []string, size float64) float64 {
+	pdf.SetFont(fontFamily, style, size)
 	widest := 0.0
 	for _, t := range texts {
 		widest = max(widest, pdf.GetStringWidth(t))
@@ -161,9 +166,9 @@ func fitTexts(pdf *fpdf.Fpdf, style string, width float64, texts []string) float
 	// Leave room for the cell margin fpdf adds on the aligned side.
 	avail := width - 2*pdf.GetCellMargin()
 	if widest <= avail {
-		return teamFontSize
+		return size
 	}
-	return max(minFontSize, teamFontSize*avail/widest)
+	return max(min(minFontSize, size), size*avail/widest)
 }
 
 // formatResult turns "0:4" into "0 - 4", shows "-" for unplayed matches and
