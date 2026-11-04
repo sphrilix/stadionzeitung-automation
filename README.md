@@ -75,7 +75,10 @@ the InDesign document's folder (e.g. synced via OneDrive). The archive holds
 `stadionzeitung.example.yaml`; `checksums.txt` lists the SHA-256 sums.
 
 The binary is not signed, so Windows SmartScreen may warn on the first
-start (*More info → Run anyway*). For Linux and macOS, see
+start (*More info → Run anyway*). If Defender or Smart App Control blocks it
+outright, use `stadionzeitung-automation_<version>_linux_amd64.tar.gz` under
+WSL instead: unpack it with `tar -xzf` and run `./stadionzeitung-automation`;
+Windows folders are under `/mnt/c/...`. For macOS, see
 [Releasing](#releasing) or build from source.
 
 ### 2. Write the config
@@ -383,9 +386,9 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-The release workflow builds the optimised Windows binary with
-`--config=release`, which stamps the tag into `-version`, and publishes it
-with `checksums.txt` as a GitHub Release with generated notes.
+The release workflow builds the optimised Windows and Linux (`linux_amd64`)
+binaries with `--config=release`, which stamps the tag into `-version`, and
+publishes them with `checksums.txt` as a GitHub Release with generated notes.
 
 To add other platforms to an existing release, run the workflow by hand
 (*Actions → Release → Run workflow*, or

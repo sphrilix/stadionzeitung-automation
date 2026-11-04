@@ -1,7 +1,8 @@
 name: Release
 
-# A pushed v* tag releases the Windows binary only. To add other platforms to
-# a release, run this workflow manually with the tag and the platforms.
+# A pushed v* tag releases the Windows and Linux binaries (Linux also runs
+# under WSL). To add other platforms to a release, run this workflow manually
+# with the tag and the platforms.
 on:
   push:
     tags: ["v*"]
@@ -12,7 +13,7 @@ on:
         required: true
       platforms:
         description: "Space-separated: windows_amd64 linux_amd64 linux_arm64 darwin_amd64 darwin_arm64"
-        default: windows_amd64
+        default: windows_amd64 linux_amd64
 
 permissions:
   contents: write
@@ -28,7 +29,7 @@ jobs:
     steps:
       - id: list
         env:
-          PLATFORMS: ${{ inputs.platforms || 'windows_amd64' }}
+          PLATFORMS: ${{ inputs.platforms || 'windows_amd64 linux_amd64' }}
         run: |
           for p in $PLATFORMS; do
             case $p in
