@@ -74,7 +74,7 @@ func TestRefereeRows(t *testing.T) {
 	}{
 		{"BFV only", "Fabian Buechner", "", true, false,
 			"[{Schiedsrichter: Fabian Buechner false} {Assistenten: Simon Engl, David Gomer false}]", "BFV"},
-		{"FuPa adds the club", "Fabian Buechner", "Fabian  buechner", true, true,
+		{"FuPa adds the club", "Fabian Buechner", "Fabian  Büchner", true, true,
 			"[{Schiedsrichter: Fabian Buechner (SC Wörnsmühl) false} {Assistenten: Simon Engl, David Gomer false}]", "BFV"},
 		{"FuPa names someone else", "Fabian Buechner", "Marijo Kraljic", true, true,
 			"[{Schiedsrichter: Fabian Buechner false} {Assistenten: Simon Engl, David Gomer false}]", "BFV"},
@@ -126,5 +126,21 @@ func TestValidateReferee(t *testing.T) {
 	}
 	if err := (entry{Kind: kindReferee}).validate(); err == nil {
 		t.Error("schiedsrichter without a team: expected an error")
+	}
+}
+
+func TestSameName(t *testing.T) {
+	for _, tc := range []struct {
+		a, b string
+		want bool
+	}{
+		{"Dominik Von Maffei", "Dominik  von Maffei", true},
+		{"Fabian Buechner", "Fabian Büchner", true},
+		{"Jörg Weiß", "Joerg Weiss", true},
+		{"Fabian Buechner", "Marijo Kraljic", false},
+	} {
+		if got := sameName(tc.a, tc.b); got != tc.want {
+			t.Errorf("sameName(%q, %q) = %v, want %v", tc.a, tc.b, got, tc.want)
+		}
 	}
 }
