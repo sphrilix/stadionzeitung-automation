@@ -91,8 +91,9 @@ func resolveTeam(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry) 
 // buildTeam builds the kinds about one team or its next opponent: the
 // squad, its top scorers and its whole page. Each part is read from FuPa,
 // or from BFV where FuPa lacks it: BFV lists the players and their goals,
-// without positions, shirt numbers or staff. The guest's page also lists
-// the officials of the match.
+// without positions, shirt numbers or staff. The match's officials are
+// their own PDF (schiedsrichter), as they are often appointed only days
+// before the match.
 func buildTeam(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry) (output, error) {
 	tm, err := resolveTeam(ctx, bc, fc, t)
 	if err != nil {
@@ -177,16 +178,6 @@ func buildTeam(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry) (o
 		warnf("%s: no scorers: %v", tm.name, err)
 	} else if len(lines) > 0 {
 		rows = append(rows, render.Row{Label: "Torjäger:", Text: strings.Join(lines, "\n"), Gap: true})
-	}
-	if t.Opponent {
-		// Officials are often appointed only days before the match; the
-		// page is still written without them.
-		if refs, _, err := refereeRows(ctx, bc, fc, t); err == nil {
-			refs[0].Gap = true
-			rows = append(rows, refs...)
-		} else {
-			warnf("%s: no referees: %v", tm.name, err)
-		}
 	}
 	g := render.TeamPage{Name: cmp.Or(t.Title, tm.name), Rows: rows}
 	g.Photo, g.PhotoCredit = teamPhoto(ctx, bc, fc, tm, fs, fupaErr)
