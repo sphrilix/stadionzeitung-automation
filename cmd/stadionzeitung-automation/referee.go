@@ -113,8 +113,13 @@ func fupaReferee(ctx context.Context, c *fupa.Client, team string) (fupa.Referee
 }
 
 // sameName reports whether BFV and FuPa name the same person, ignoring
-// case and spacing ("Dominik Von Maffei", "Dominik von Maffei").
+// case and spacing ("Dominik Von Maffei", "Dominik von Maffei") and how
+// umlauts are spelt: BFV writes "Fabian Buechner", FuPa "Fabian Büchner".
 func sameName(a, b string) bool {
-	norm := func(s string) string { return strings.Join(strings.Fields(s), " ") }
-	return strings.EqualFold(norm(a), norm(b))
+	norm := func(s string) string {
+		return umlauts.Replace(strings.ToLower(strings.Join(strings.Fields(s), " ")))
+	}
+	return norm(a) == norm(b)
 }
+
+var umlauts = strings.NewReplacer("ä", "ae", "ö", "oe", "ü", "ue", "ß", "ss")
