@@ -174,3 +174,25 @@ func TestBFVSquadRows(t *testing.T) {
 		t.Errorf("bfvSquadRows = %s, want %s", got, want)
 	}
 }
+
+func TestGroupClubs(t *testing.T) {
+	_, fc := sources(t, map[string]string{
+		"/fupa/referees/fabian-buechner-18043": `{"group":{"slug":"isar-rott"}}`,
+		"/fupa/referee-groups/isar-rott/referees?limit=100&offset=0": `{"referees":[
+			{"name":"David Gomer","club":{"name":"FC A"}},
+			{"name":"Max Doppelt","club":{"name":"FC A"}}]}`,
+		"/fupa/referee-groups/passau/referees?limit=100&offset=0": `{"referees":[
+			{"name":"Simon Engl","club":{"name":"SV Hofkirchen"}},
+			{"name":"Max Doppelt","club":{"name":"FC B"}},
+			{"name":"Fabian Büchner","club":{"name":"Wrong"}}]}`,
+	})
+	clubs := map[string]string{"Fabian Buechner": "FC Mariakirchen"}
+	ref := fupa.Referee{Slug: "fabian-buechner-18043", Name: "Fabian Büchner"}
+	// "passau" twice and a missing group are harmless.
+	groupClubs(context.Background(), fc, ref, []string{"passau", "passau", "missing"},
+		[]string{"Fabian Buechner", "Simon Engl", "David Gomer", "Max Doppelt", "Nobody"}, clubs)
+	want := map[string]string{"Fabian Buechner": "FC Mariakirchen", "Simon Engl": "SV Hofkirchen", "David Gomer": "FC A"}
+	if fmt.Sprint(clubs) != fmt.Sprint(want) {
+		t.Errorf("clubs = %v, want %v (Max Doppelt is in two clubs)", clubs, want)
+	}
+}

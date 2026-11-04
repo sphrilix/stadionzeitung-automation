@@ -28,14 +28,17 @@ func buildReferee(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry)
 
 // refereeRows lays out the officials of a team's next league match, e.g.
 // "Schiedsrichter: Marijo Kraljic (SC Wörnsmühl)" and
-// "Assistenten: Moritz Breitruck, Dominik Von Maffei", and says where they
-// are from. BFV lists the referee and the assistants; FuPa, if the team has
-// it, adds the referee's club, and stands in while BFV has no referee.
+// "Assistenten: Moritz Breitruck (TSV Bad Abbach), Dominik Von Maffei", and
+// says where they are from. BFV lists the referee and the assistants;
+// FuPa, if the team has it, adds the referee's club, and stands in while
+// BFV has no referee. The other officials' clubs are looked up by name
+// among the referees of the referee's group and of t.RefereeGroups.
 func refereeRows(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry) (rows []render.Row, source string, err error) {
 	var (
-		off    bfv.Officials
-		club   string
-		bfvErr error
+		off     bfv.Officials
+		fupaRef fupa.Referee
+		fupaErr error
+		bfvErr  error
 	)
 	source = "BFV"
 	if t.Team != "" {
@@ -44,33 +47,92 @@ func refereeRows(ctx context.Context, bc *bfv.Client, fc *fupa.Client, t entry) 
 			return nil, "", bfvErr
 		}
 	}
+	clubs := map[string]string{}
 	if t.FuPa != "" {
-		ref, err := fupaReferee(ctx, fc, t.FuPa)
+		fupaRef, fupaErr = fupaReferee(ctx, fc, t.FuPa)
 		switch {
 		case t.Team == "" || bfvErr != nil:
-			if err != nil {
+			if fupaErr != nil {
 				if bfvErr != nil {
-					return nil, "", fmt.Errorf("BFV: %w; FuPa: %w", bfvErr, err)
+					return nil, "", fmt.Errorf("BFV: %w; FuPa: %w", bfvErr, fupaErr)
 				}
-				return nil, "", err
+				return nil, "", fupaErr
 			}
-			off, club, source = bfv.Officials{Referee: ref.Name}, ref.Club, "FuPa"
+			off, source = bfv.Officials{Referee: fupaRef.Name}, "FuPa"
 			if bfvErr != nil {
 				source += ", BFV: " + bfvErr.Error()
 			}
-		case err == nil && sameName(ref.Name, off.Referee):
-			club = ref.Club
 		}
+		if fupaErr == nil && sameName(fupaRef.Name, off.Referee) {
+			clubs[off.Referee] = fupaRef.Club
+		}
+		groupClubs(ctx, fc, fupaRef, t.RefereeGroups, append([]string{off.Referee}, off.Assistants...), clubs)
 	}
-	ref := off.Referee
-	if club != "" {
-		ref += " (" + club + ")"
+	withClub := func(name string) string {
+		if c := clubs[name]; c != "" {
+			return name + " (" + c + ")"
+		}
+		return name
 	}
-	rows = []render.Row{{Label: "Schiedsrichter:", Text: ref}}
+	rows = []render.Row{{Label: "Schiedsrichter:", Text: withClub(off.Referee)}}
 	if len(off.Assistants) > 0 {
-		rows = append(rows, render.Row{Label: "Assistenten:", Text: strings.Join(off.Assistants, ", ")})
+		names := make([]string, len(off.Assistants))
+		for i, a := range off.Assistants {
+			names[i] = withClub(a)
+		}
+		rows = append(rows, render.Row{Label: "Assistenten:", Text: strings.Join(names, ", ")})
 	}
 	return rows, source, nil
+}
+
+// groupClubs adds the clubs of the officials not in clubs yet, looked up by
+// name among the referees of the referee's group and of groups. A name
+// found with more than one club is left without.
+func groupClubs(ctx context.Context, fc *fupa.Client, ref fupa.Referee, groups []string, officials []string, clubs map[string]string) {
+	var missing []string
+	for _, o := range officials {
+		if o != "" && clubs[o] == "" {
+			missing = append(missing, o)
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+	if ref.Slug != "" {
+		if g, err := fc.RefereeGroup(ctx, ref.Slug); err == nil {
+			groups = append([]string{g}, groups...)
+		}
+	}
+	found := map[string]map[string]bool{}
+	seen := map[string]bool{}
+	for _, g := range groups {
+		if seen[g] {
+			continue
+		}
+		seen[g] = true
+		members, err := fc.GroupReferees(ctx, g)
+		if err != nil {
+			warnf("referee group %s: %v", g, err)
+			continue
+		}
+		for _, m := range members {
+			for _, o := range missing {
+				if m.Club != "" && sameName(m.Name, o) {
+					if found[o] == nil {
+						found[o] = map[string]bool{}
+					}
+					found[o][m.Club] = true
+				}
+			}
+		}
+	}
+	for _, o := range missing {
+		if len(found[o]) == 1 {
+			for c := range found[o] {
+				clubs[o] = c
+			}
+		}
+	}
 }
 
 // bfvOfficials returns the officials of the next league match of a bfv.de
@@ -113,8 +175,13 @@ func fupaReferee(ctx context.Context, c *fupa.Client, team string) (fupa.Referee
 }
 
 // sameName reports whether BFV and FuPa name the same person, ignoring
-// case and spacing ("Dominik Von Maffei", "Dominik von Maffei").
+// case and spacing ("Dominik Von Maffei", "Dominik von Maffei") and how
+// umlauts are spelt: BFV writes "Fabian Buechner", FuPa "Fabian Büchner".
 func sameName(a, b string) bool {
-	norm := func(s string) string { return strings.Join(strings.Fields(s), " ") }
-	return strings.EqualFold(norm(a), norm(b))
+	norm := func(s string) string {
+		return umlauts.Replace(strings.ToLower(strings.Join(strings.Fields(s), " ")))
+	}
+	return norm(a) == norm(b)
 }
+
+var umlauts = strings.NewReplacer("ä", "ae", "ö", "oe", "ü", "ue", "ß", "ss")

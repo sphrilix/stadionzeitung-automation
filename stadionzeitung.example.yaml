@@ -21,6 +21,11 @@ fonts:
 club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
 jugend: [ergebnisse, vorschau]
 
+# FuPa referee groups (slug from https://www.fupa.net/referee-group/<slug>)
+# in which the assistant referees' clubs are looked up, besides the
+# referee's own group. Only used for teams with fupa.
+refereeGroups: [passau]
+
 # PDFs per team. What both BFV and FuPa have is read from one and, where
 # it lacks it, from the other (see "Two sources" in the README); set fupa
 # only with FuPa's written permission.

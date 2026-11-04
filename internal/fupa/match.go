@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -63,7 +64,24 @@ func (m Match) Opponent(teamSlug string) Team {
 
 // Referee is a match official with their club.
 type Referee struct {
-	Name, Club string
+	// Slug identifies the referee's FuPa profile.
+	Slug, Name, Club string
+}
+
+type refereeJSON struct {
+	Slug string `json:"slug"`
+	Name string `json:"name"`
+	Club *struct {
+		Name string `json:"name"`
+	} `json:"club"`
+}
+
+func (r refereeJSON) referee() Referee {
+	ref := Referee{Slug: r.Slug, Name: strings.TrimSpace(r.Name)}
+	if r.Club != nil {
+		ref.Club = strings.TrimSpace(r.Club.Name)
+	}
+	return ref
 }
 
 // ErrNoReferee is returned while FuPa has no referee for a match yet.
@@ -73,12 +91,7 @@ var ErrNoReferee = errors.New("FuPa has no referee for the match yet")
 // the assistants.
 func (c *Client) Referee(ctx context.Context, matchSlug string) (Referee, error) {
 	var r struct {
-		Referee *struct {
-			Name string `json:"name"`
-			Club *struct {
-				Name string `json:"name"`
-			} `json:"club"`
-		} `json:"referee"`
+		Referee *refereeJSON `json:"referee"`
 	}
 	if err := c.get(ctx, "/matches/"+matchSlug, &r); err != nil {
 		return Referee{}, err
@@ -86,9 +99,45 @@ func (c *Client) Referee(ctx context.Context, matchSlug string) (Referee, error)
 	if r.Referee == nil || r.Referee.Name == "" {
 		return Referee{}, ErrNoReferee
 	}
-	ref := Referee{Name: r.Referee.Name}
-	if r.Referee.Club != nil {
-		ref.Club = strings.TrimSpace(r.Referee.Club.Name)
+	return r.Referee.referee(), nil
+}
+
+// RefereeGroup returns the slug of the referee group ("Schiedsrichter-
+// gruppe") a referee belongs to, e.g. "isar-rott".
+func (c *Client) RefereeGroup(ctx context.Context, refereeSlug string) (string, error) {
+	var r struct {
+		Group *struct {
+			Slug string `json:"slug"`
+		} `json:"group"`
 	}
-	return ref, nil
+	if err := c.get(ctx, "/referees/"+refereeSlug, &r); err != nil {
+		return "", err
+	}
+	if r.Group == nil || r.Group.Slug == "" {
+		return "", fmt.Errorf("FuPa names no referee group for %s", refereeSlug)
+	}
+	return r.Group.Slug, nil
+}
+
+// groupPage is the most referees FuPa returns per request.
+const groupPage = 100
+
+// GroupReferees returns the referees of a referee group with their clubs.
+func (c *Client) GroupReferees(ctx context.Context, groupSlug string) ([]Referee, error) {
+	var out []Referee
+	for offset := 0; ; offset += groupPage {
+		var r struct {
+			Referees []refereeJSON `json:"referees"`
+		}
+		path := fmt.Sprintf("/referee-groups/%s/referees?limit=%d&offset=%d", url.PathEscape(groupSlug), groupPage, offset)
+		if err := c.get(ctx, path, &r); err != nil {
+			return nil, err
+		}
+		for _, rj := range r.Referees {
+			out = append(out, rj.referee())
+		}
+		if len(r.Referees) < groupPage {
+			return out, nil
+		}
+	}
 }

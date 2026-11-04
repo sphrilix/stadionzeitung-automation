@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -192,5 +193,36 @@ func TestStandings(t *testing.T) {
 	}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("Standings = %+v, want %+v", got, want)
+	}
+}
+
+func TestRefereeGroups(t *testing.T) {
+	var page strings.Builder
+	page.WriteString(`{"referees":[`)
+	for i := 0; i < groupPage; i++ {
+		if i > 0 {
+			page.WriteString(",")
+		}
+		fmt.Fprintf(&page, `{"slug":"r-%d","name":"Referee %d","club":{"name":"Club %d"}}`, i, i, i)
+	}
+	page.WriteString(`]}`)
+	c := serve(t, map[string]string{
+		"/referees/fabian-buechner-18043":                      `{"slug":"fabian-buechner-18043","group":{"slug":"isar-rott"}}`,
+		"/referees/no-group-1":                                 `{"slug":"no-group-1"}`,
+		"/referee-groups/passau/referees?limit=100&offset=0":   page.String(),
+		"/referee-groups/passau/referees?limit=100&offset=100": `{"referees":[{"slug":"simon-engl-1","name":"Simon Engl","club":{"name":" SV Hofkirchen "}},{"slug":"x-2","name":"Ohne Verein","club":null}]}`,
+	})
+	if g, err := c.RefereeGroup(context.Background(), "fabian-buechner-18043"); err != nil || g != "isar-rott" {
+		t.Errorf("RefereeGroup = %q, %v", g, err)
+	}
+	if _, err := c.RefereeGroup(context.Background(), "no-group-1"); err == nil {
+		t.Error("RefereeGroup without group = nil error")
+	}
+	refs, err := c.GroupReferees(context.Background(), "passau")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(refs) != groupPage+2 || refs[groupPage] != (Referee{Slug: "simon-engl-1", Name: "Simon Engl", Club: "SV Hofkirchen"}) || refs[groupPage+1].Club != "" {
+		t.Errorf("GroupReferees = %d referees, last ones %+v", len(refs), refs[groupPage:])
 	}
 }

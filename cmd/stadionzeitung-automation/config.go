@@ -35,6 +35,10 @@ type config struct {
 	// list matches; 0 means defaultDays, plus more weeks up to maxYouthDays
 	// while they fit the page.
 	Days int `json:"days"`
+	// RefereeGroups are FuPa referee groups ("Schiedsrichtergruppen", e.g.
+	// "passau") whose members the officials' clubs are looked up among,
+	// besides the referee's own group.
+	RefereeGroups []string `json:"refereeGroups"`
 	// Teams maps a short name used in the file names, e.g. "H1", to a team.
 	Teams map[string]teamConfig `json:"teams"`
 
@@ -100,6 +104,9 @@ type entry struct {
 	AllPlayers bool
 	// Title is the headline of a team page; empty means the team's name.
 	Title string
+	// RefereeGroups are FuPa referee groups to look up the officials'
+	// clubs in, besides the referee's own.
+	RefereeGroups []string
 
 	// matchday overrides the current matchday (command line only).
 	matchday int
@@ -243,6 +250,7 @@ func (c *config) expand() error {
 				File: filePrefix[kind] + "-" + name + ".pdf",
 				Kind: kind, Team: tc.BFV, FuPa: tc.FuPa, Top: tc.Top,
 				Roles: tc.Roles, AllPlayers: tc.AllPlayers, Title: tc.Name,
+				RefereeGroups: c.RefereeGroups,
 			}
 			if gast {
 				// Guests often number only part of their squad, and the
