@@ -370,7 +370,7 @@ bfv.de page lists them:
 
 ```text
 Schiedsrichter: Marijo Kraljic (SC Wörnsmühl)
-Assistenten:    Moritz Breitruck, Dominik Von Maffei
+Assistenten:    Moritz Breitruck (TSV Bad Abbach), Dominik Von Maffei
 ```
 
 It needs `bfv`, `fupa` or both:
@@ -382,6 +382,14 @@ It needs `bfv`, `fupa` or both:
   which lists the referee only, not the assistants. The progress line then
   says `(FuPa, BFV: …)`.
 - With `fupa` only, the referee comes from FuPa.
+- FuPa does not list the assistants of a match, but most assistants are
+  referees themselves. With `fupa`, each official still without a club is
+  looked up by name among the members of the referee's own referee group
+  ("Schiedsrichtergruppe") and of the groups in the top-level
+  `refereeGroups`, e.g. `refereeGroups: [passau]` (the group's slug from
+  its FuPa page, `https://www.fupa.net/referee-group/passau`). Assistants
+  are often from the home club's region, so list its group there. A name
+  found in no group, or with different clubs, is printed without a club.
 
 Until BFV or FuPa knows the referee, the entry fails with a message and
 the previous PDF is kept.
