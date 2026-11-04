@@ -4,9 +4,9 @@ go_library(
     name = "stadionzeitung-automation_lib",
     srcs = [
         "config.go",
-        "fupa.go",
         "main.go",
         "referee.go",
+        "team.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/cmd/stadionzeitung-automation",
     visibility = ["//visibility:private"],
@@ -31,6 +31,7 @@ go_test(
         "config_test.go",
         "fupa_test.go",
         "referee_test.go",
+        "team_test.go",
         "youth_test.go",
     ],
     data = ["//:stadionzeitung.example.yaml"],

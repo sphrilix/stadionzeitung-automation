@@ -31,6 +31,8 @@ type Client struct {
 	BaseWidget string
 	// BaseLogo is prefixed to a club ID to get its logo.
 	BaseLogo string
+	// BaseMedia is prefixed to a team ID to get its photo.
+	BaseMedia string
 	// BaseFont is prefixed to the ID of a font bfv.de obfuscates its pages
 	// with to get that font.
 	BaseFont string
@@ -40,7 +42,7 @@ type Client struct {
 
 // NewClient returns a Client for the production BFV endpoints.
 func NewClient() *Client {
-	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget, BaseLogo: DefaultBaseLogo, BaseFont: DefaultBaseFont}
+	return &Client{HTTP: http.DefaultClient, BaseWeb: DefaultBaseWeb, BaseWidget: DefaultBaseWidget, BaseLogo: DefaultBaseLogo, BaseMedia: DefaultBaseMedia, BaseFont: DefaultBaseFont}
 }
 
 func (c *Client) get(ctx context.Context, url string) ([]byte, error) {

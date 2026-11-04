@@ -143,7 +143,7 @@ func TestLeagueScorers(t *testing.T) {
 func TestTeamPhoto(t *testing.T) {
 	c := serve(t, map[string]string{
 		"/teams/luhe-m1-2026-27/squad": `{"players":[],"coaches":[],"info":{"teamImage":{"path":"https://image.fupa.net/team-image/abc/","source":" Robert Geisler "}}}`,
-		"/team-image/abc/" + photoSize:  "JPEGDATA",
+		"/team-image/abc/" + photoSize: "JPEGDATA",
 	})
 	s, err := c.Squad(context.Background(), "luhe-m1-2026-27")
 	if err != nil {
@@ -173,5 +173,24 @@ func TestTeamPhotoPlaceholder(t *testing.T) {
 	}
 	if s.Photo != "https://image.fupa.net/team-image/xyz/" || !s.PhotoPlaceholder {
 		t.Errorf("Photo, PhotoPlaceholder = %q, %v", s.Photo, s.PhotoPlaceholder)
+	}
+}
+
+func TestStandings(t *testing.T) {
+	c := serve(t, map[string]string{
+		"/standings?competition=bayern-landesliga-mitte": `{"standings":[
+			{"rank":1,"matches":18,"points":42,"team":{"slug":"fc-dingolfing-m1-2026-27","name":{"full":"FC Dingolfing"},"image":{"path":"https://image.fupa.net/club/3ysn/","svg":false}}},
+			{"rank":2,"matches":18,"points":39,"team":{"slug":"x-m1-2026-27","name":{"full":"X"},"image":null}}]}`,
+	})
+	got, err := c.Standings(context.Background(), "bayern-landesliga-mitte")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Standing{
+		{Rank: 1, Matches: 18, Points: 42, Team: "FC Dingolfing", Logo: "https://image.fupa.net/club/3ysn/"},
+		{Rank: 2, Matches: 18, Points: 39, Team: "X"},
+	}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("Standings = %+v, want %+v", got, want)
 	}
 }

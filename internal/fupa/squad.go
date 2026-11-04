@@ -126,7 +126,13 @@ func (c *Client) TeamPhoto(ctx context.Context, s Squad) ([]byte, error) {
 	if s.Photo == "" {
 		return nil, fmt.Errorf("FuPa has no team photo")
 	}
-	url := strings.TrimSuffix(s.Photo, "/") + "/" + photoSize
+	return c.image(ctx, s.Photo, photoSize)
+}
+
+// image downloads an image from FuPa's image server in the given size,
+// e.g. "1920x1080.jpeg".
+func (c *Client) image(ctx context.Context, path, size string) ([]byte, error) {
+	url := strings.TrimSuffix(path, "/") + "/" + size
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -138,7 +144,7 @@ func (c *Client) TeamPhoto(ctx context.Context, s Squad) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("FuPa team photo: %s", resp.Status)
+		return nil, fmt.Errorf("FuPa image %s: %s", url, resp.Status)
 	}
 	return io.ReadAll(resp.Body)
 }

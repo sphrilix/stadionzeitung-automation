@@ -6,6 +6,7 @@ go_library(
         "client.go",
         "match.go",
         "scorers.go",
+        "standings.go",
         "squad.go",
     ],
     importpath = "github.com/sphrilix/stadionzeitung-automation/internal/fupa",

@@ -6,6 +6,7 @@ go_library(
         "client.go",
         "club.go",
         "glyphs.go",
+        "media.go",
         "model.go",
         "page.go",
         "referee.go",
@@ -27,6 +28,7 @@ go_test(
     srcs = [
         "client_test.go",
         "club_test.go",
+        "media_test.go",
         "page_test.go",
         "referee_test.go",
         "season_test.go",

@@ -21,14 +21,15 @@ fonts:
 club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
 jugend: [ergebnisse, vorschau]
 
-# PDFs per team, from BFV:
+# PDFs per team. What both BFV and FuPa have is read from one and, where
+# it lacks it, from the other (see "Two sources" in the README); set fupa
+# only with FuPa's written permission.
 #   spieltage  previous, current and next matchday   Spielplan-<Team>.pdf
 #   tabelle    league table                          Tabelle-<Team>.pdf
 #   spielplan  season schedule                       Saisonspielplan-<Team>.pdf
-#   torjaeger  top scorers (from FuPa if set)        Torjaeger-<Team>.pdf
+#   torjaeger  top scorers                           Torjaeger-<Team>.pdf
 #   schiedsrichter  referee and assistants of the next match, with
 #              the referee's club from FuPa if set   Schiedsrichter-<Team>.pdf
-# and from FuPa, only with FuPa's written permission (see the README):
 #   kader              squad with coaches and staff  Kader-<Team>.pdf
 #   liga-torjaeger     top scorers of the league     Liga-Torjaeger-<Team>.pdf
 #   tabelle-torjaeger  table with the league's top   Tabelle-Torjaeger-<Team>.pdf

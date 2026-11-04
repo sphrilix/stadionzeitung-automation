@@ -31,7 +31,7 @@ const (
 
 // TableOptions tune a rendered table.
 type TableOptions struct {
-	// Logos maps club IDs to PNG logos; teams without one get none.
+	// Logos maps team IDs to PNG logos; teams without one get none.
 	Logos map[string][]byte
 	// Highlight sets the rows of teams whose name contains it in bold, e.g.
 	// the club's own teams.
@@ -125,7 +125,7 @@ func (b tableBlock) draw(pdf *fpdf.Fpdf, x, y float64) {
 			pdf.CellFormat(tColPos, tRowHeight, pos, "", 0, "C", false, 0, "")
 		}
 
-		if name, ok := logos[r.ClubID]; ok {
+		if name, ok := logos[r.TeamID]; ok {
 			pdf.ImageOptions(name, x+tColPos+(tColLogo-logoSize)/2, rowY+(tRowHeight-logoSize)/2,
 				logoSize, logoSize, false, fpdf.ImageOptions{}, 0, "")
 		}
@@ -149,11 +149,11 @@ func (b tableBlock) draw(pdf *fpdf.Fpdf, x, y float64) {
 }
 
 // registerLogos adds the logos to the PDF and returns their image names by
-// club ID. A logo that is not a readable PNG is skipped; fpdf errors are
+// team ID. A logo that is not a readable PNG is skipped; fpdf errors are
 // sticky, so it is re-encoded in a form fpdf accepts before registering.
 func registerLogos(pdf *fpdf.Fpdf, logos map[string][]byte) map[string]string {
 	names := map[string]string{}
-	for club, b := range logos {
+	for team, b := range logos {
 		img, err := png.Decode(bytes.NewReader(b))
 		if err != nil {
 			continue
@@ -162,9 +162,9 @@ func registerLogos(pdf *fpdf.Fpdf, logos map[string][]byte) map[string]string {
 		if err := png.Encode(&buf, img); err != nil {
 			continue
 		}
-		name := "logo-" + club
+		name := "logo-" + team
 		pdf.RegisterImageOptionsReader(name, fpdf.ImageOptions{ImageType: "PNG"}, &buf)
-		names[club] = name
+		names[team] = name
 	}
 	return names
 }
