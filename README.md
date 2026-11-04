@@ -69,25 +69,59 @@ FuPa's written permission, see [FuPa](#fupa).
 
 ### 1. Get the tool
 
-Download `stadionzeitung-automation_<version>_windows_amd64.zip` from the
-[latest release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest)
-and unpack it, e.g. into `C:\stadionzeitung-automation\`, on the PC that has
-the InDesign document's folder (e.g. synced via OneDrive). The archive holds
-`stadionzeitung-automation.exe`, this README, the license and
-`stadionzeitung.example.yaml`; `checksums.txt` lists the SHA-256 sums.
+Each [release](https://github.com/sphrilix/stadionzeitung-automation/releases/latest)
+has a Windows and a Linux build. Use it on the PC that has the InDesign
+document's folder (e.g. synced via OneDrive). Each archive holds the program,
+this README, the license and `stadionzeitung.example.yaml`; `checksums.txt`
+lists the SHA-256 sums.
 
-The binary is not signed, so Windows SmartScreen may warn on the first
+**Windows.** Download `stadionzeitung-automation_<version>_windows_amd64.zip`
+and unpack it, e.g. into `C:\stadionzeitung-automation\`. Check it starts, in
+a terminal (PowerShell or cmd) in that folder:
+
+```bat
+.\stadionzeitung-automation.exe -version
+```
+
+The program is not signed, so Windows SmartScreen may warn on the first
 start (*More info → Run anyway*). If Defender or Smart App Control blocks it
-outright, use `stadionzeitung-automation_<version>_linux_amd64.tar.gz` under
-WSL instead: unpack it with `tar -xzf` and run `./stadionzeitung-automation`;
-Windows folders are under `/mnt/c/...`. For macOS, see
+outright ("Zugriff verweigert" / "Access denied", even as administrator), use
+the Linux build under WSL instead.
+
+**Linux, or Windows via WSL.** On Windows, install WSL once from an
+administrator PowerShell with `wsl --install` and restart. Download
+`stadionzeitung-automation_<version>_linux_amd64.tar.gz`, then in a Linux
+(WSL) terminal unpack it into a Windows folder, so the config and the
+shortcut below can sit next to it:
+
+```sh
+mkdir -p /mnt/c/stadionzeitung-automation
+cd /mnt/c/stadionzeitung-automation
+tar -xzf /mnt/c/Users/<user>/Downloads/stadionzeitung-automation_<version>_linux_amd64.tar.gz --strip-components=1
+./stadionzeitung-automation -version
+```
+
+Under WSL the Windows drives are `/mnt/c/...`, `/mnt/d/...`. The Linux build
+is self-contained and runs on any distribution. For macOS, see
 [Releasing](#releasing) or build from source.
 
 ### 2. Write the config
 
 Copy `stadionzeitung.example.yaml` to `stadionzeitung.yaml` next to the
-`.exe`. The example is FC Sturm Hauzenberg's complete setup. Adjust
+program. The example is FC Sturm Hauzenberg's complete setup. Adjust
 `outDir`, and for another club the addresses.
+
+Paths in the config are read by the program, so they follow its system:
+the Windows build takes `C:/Users/...`, the Linux build under WSL takes
+`/mnt/c/Users/...` for the same folder. A relative path is taken from the
+config's folder. The example below is for Windows; under WSL write e.g.
+
+```yaml
+outDir: /mnt/c/Users/<user>/OneDrive/Stadionzeitung/Dateien
+fonts:
+  regular: /mnt/c/Windows/Fonts/calibri.ttf
+  bold: /mnt/c/Windows/Fonts/calibrib.ttf
+```
 
 Each team needs its bfv.de page, plus its FuPa page for the FuPa PDFs.
 Everything else (league, table, opponent, team name) is looked up from
@@ -141,7 +175,8 @@ error.
 
 ### 4. Optional: a double-click shortcut
 
-Save this as `Stadionzeitung aktualisieren.bat` next to the `.exe`:
+Save this as `Stadionzeitung aktualisieren.bat` next to the program.
+For the Windows build:
 
 ```bat
 @echo off
@@ -150,13 +185,28 @@ stadionzeitung-automation.exe -config stadionzeitung.yaml
 pause
 ```
 
+For the Linux build under WSL, the same shortcut starts it through WSL in
+the `.bat`'s folder:
+
+```bat
+@echo off
+wsl --cd "%~dp0." ./stadionzeitung-automation -config stadionzeitung.yaml
+pause
+```
+
 ## Every issue
 
 1. Run the tool on the weekend before the home game: double-click the
-   `.bat`, or in a terminal in the tool's folder
+   `.bat`, or in a terminal in the tool's folder, on Windows
+
+   ```bat
+   .\stadionzeitung-automation.exe -config stadionzeitung.yaml
+   ```
+
+   or under Linux / WSL
 
    ```sh
-   stadionzeitung-automation.exe -config stadionzeitung.yaml
+   ./stadionzeitung-automation -config stadionzeitung.yaml
    ```
 
    It prints each PDF it writes. Each file is replaced in one step, so
@@ -338,10 +388,12 @@ the previous PDF is kept.
 
 ## Single PDFs from the command line
 
-For trying things out, the tool also writes one PDF without a config:
+For trying things out, the tool also writes one PDF without a config
+(on Windows `.\stadionzeitung-automation.exe`, under Linux / WSL
+`./stadionzeitung-automation`):
 
 ```sh
-stadionzeitung-automation -kind tabelle -o tabelle.pdf \
+./stadionzeitung-automation -kind tabelle -o tabelle.pdf \
   https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R
 ```
 
