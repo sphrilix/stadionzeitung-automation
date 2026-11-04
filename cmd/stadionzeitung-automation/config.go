@@ -79,9 +79,9 @@ type entry struct {
 	Team string
 	// Club is a bfv.de club URL or club id, for kinds about all its teams.
 	Club string
-	// FuPa is a fupa.net team URL or slug. Kinds that need FuPa read it
-	// from there; torjaeger prefers it over BFV, whose squads can be
-	// private.
+	// FuPa is a fupa.net team URL or slug. Data both sources have is read
+	// from FuPa first and from BFV where FuPa lacks it, or the other way
+	// round where BFV's is better (tables, referees).
 	FuPa string
 	// Opponent writes the PDF for the team's next league opponent.
 	Opponent bool
@@ -128,12 +128,14 @@ const (
 var kinds = []string{kindMatchdays, kindTable, kindSeason, kindScorers, kindYouthDone, kindYouthNext,
 	kindSquad, kindLeagueTop, kindReferee, kindTableTop, kindTeamPage}
 
-// teamKinds are the kinds about one team rather than a league, clubKinds
-// those about all teams of a club, fupaKinds those only FuPa has data for.
+// teamKinds are the kinds about one bfv.de team rather than a league,
+// clubKinds those about all teams of a club, eitherKinds those read from
+// FuPa or BFV, whichever has the data (each part from FuPa first, then
+// BFV), so they need a team on at least one of them.
 var (
-	teamKinds = []string{kindSeason, kindScorers}
-	clubKinds = []string{kindYouthDone, kindYouthNext}
-	fupaKinds = []string{kindSquad, kindLeagueTop, kindTeamPage}
+	teamKinds   = []string{kindSeason}
+	clubKinds   = []string{kindYouthDone, kindYouthNext}
+	eitherKinds = []string{kindSquad, kindScorers, kindTeamPage, kindReferee, kindLeagueTop}
 	// gastKinds can be written for a team's next opponent.
 	gastKinds = []string{kindSquad, kindScorers, kindTeamPage}
 )
@@ -164,20 +166,14 @@ func (e entry) validate() error {
 	switch {
 	case e.Kind != "" && !slices.Contains(kinds, e.Kind):
 		return fmt.Errorf("unknown kind %q (want one of %s)", e.Kind, strings.Join(kinds, ", "))
-	case slices.Contains(fupaKinds, e.Kind):
-		if e.FuPa == "" {
-			return errors.New("needs a fupa team")
+	case e.Kind == kindLeagueTop:
+		if e.Team == "" && e.League == "" && e.FuPa == "" {
+			return errors.New("needs a bfv team or league, or a fupa team")
 		}
-	case e.Kind == kindReferee:
+	case slices.Contains(eitherKinds, e.Kind):
 		if e.Team == "" && e.FuPa == "" {
 			return errors.New("needs a bfv team or a fupa team")
 		}
-	case e.Kind == kindTableTop:
-		if e.FuPa == "" || (e.League == "" && e.Team == "") {
-			return errors.New("needs a bfv team (the table) and a fupa team (the scorers)")
-		}
-	case e.Kind == kindScorers && e.FuPa != "":
-		// FuPa replaces the BFV team.
 	case slices.Contains(teamKinds, e.Kind):
 		if e.Team == "" {
 			return errors.New("needs a bfv team")

@@ -2,11 +2,12 @@
 // and next matchday or its table, a team's season fixtures or top scorers,
 // or a club's recent and upcoming youth matches. With FuPa's permission it
 // adds what BFV lacks: squads, league top scorers and the referee's club.
+// Data both have is read from one and, where it lacks it, from the other.
 //
 //	stadionzeitung-automation [-o out.pdf] [-kind tabelle] [-matchday N] <bfv.de league URL | competition id>
-//	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger|schiedsrichter <bfv.de team URL | team id>
+//	stadionzeitung-automation [-o out.pdf] -kind spielplan|torjaeger|kader|seite|liga-torjaeger|schiedsrichter <bfv.de team URL | team id>
 //	stadionzeitung-automation [-o out.pdf] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>
-//	stadionzeitung-automation [-o out.pdf] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
+//	stadionzeitung-automation [-o out.pdf] -kind torjaeger|kader|seite|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>
 //	stadionzeitung-automation -config stadionzeitung.yaml
 //	stadionzeitung-automation -version
 package main
@@ -49,7 +50,7 @@ func main() {
 	days := flag.Int("days", 0, fmt.Sprintf("for the jugend kinds: how many days back or ahead to list (default: %d, more weeks up to %d while they fit the page)", defaultDays, maxYouthDays))
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger|schiedsrichter <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind kader|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "stadionzeitung-automation %s\nusage: %s [flags] <bfv.de league URL | competition id>\n       %s [flags] -kind spielplan|torjaeger|kader|seite|liga-torjaeger|schiedsrichter <bfv.de team URL | team id>\n       %s [flags] -kind jugend-ergebnisse|jugend-vorschau <bfv.de club URL | club id>\n       %s [flags] -kind torjaeger|kader|seite|liga-torjaeger|schiedsrichter <fupa.net team URL | slug>\n       %s -config <file.yaml>\n", version, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -80,22 +81,22 @@ func main() {
 func runSingle(arg, out, kind string, matchday, days int) error {
 	t := entry{Kind: kind, League: arg, matchday: matchday}
 	switch {
-	case kind == kindReferee:
+	case slices.Contains(eitherKinds, kind) && !(kind == kindLeagueTop && reCompoundID.MatchString(arg)):
 		// A bfv.de team, or else a FuPa one.
 		if _, err := parseTeam(arg); err == nil {
 			t = entry{Kind: kind, Team: arg}
 		} else {
 			t = entry{Kind: kind, FuPa: arg}
 		}
-	case !reCompoundID.MatchString(arg) && !slices.Contains(clubKinds, kind) && !slices.Contains(fupaKinds, kind):
+	case kind == kindLeagueTop:
+		// A league id.
+	case !reCompoundID.MatchString(arg) && !slices.Contains(clubKinds, kind):
 		// A team URL: its league is looked up.
 		t = entry{Kind: kind, Team: arg, matchday: matchday}
 	case slices.Contains(teamKinds, kind):
 		t = entry{Kind: kind, Team: arg}
 	case slices.Contains(clubKinds, kind):
 		t = entry{Kind: kind, Club: arg, Days: days}
-	case slices.Contains(fupaKinds, kind):
-		t = entry{Kind: kind, FuPa: arg}
 	}
 	if err := t.validate(); err != nil {
 		return err
@@ -164,18 +165,15 @@ func build(t entry, c *bfv.Client) (output, error) {
 				}
 			}
 		}
-		return buildFuPa(ctx, c, fupa.NewClient(), t)
-	case kindSquad, kindLeagueTop:
-		return buildFuPa(ctx, c, fupa.NewClient(), t)
+		return buildTeam(ctx, c, fupa.NewClient(), t)
+	case kindSquad, kindScorers:
+		return buildTeam(ctx, c, fupa.NewClient(), t)
+	case kindLeagueTop:
+		return buildLeagueScorers(ctx, c, fupa.NewClient(), t)
 	case kindReferee:
 		return buildReferee(ctx, c, fupa.NewClient(), t)
 	case kindTableTop:
 		return buildTableScorers(ctx, c, fupa.NewClient(), t)
-	case kindScorers:
-		if t.FuPa != "" {
-			return buildFuPa(ctx, c, fupa.NewClient(), t)
-		}
-		return buildScorers(ctx, c, t)
 	default:
 		return buildMatchdays(ctx, c, t)
 	}
@@ -218,7 +216,7 @@ func buildMatchdays(ctx context.Context, c *bfv.Client, t entry) (output, error)
 }
 
 func buildTable(ctx context.Context, c *bfv.Client, t entry) (output, error) {
-	tbl, opts, err := fetchTable(ctx, c, t)
+	tbl, opts, err := fetchTable(ctx, c, fupa.NewClient(), t)
 	if err != nil {
 		return output{}, err
 	}
@@ -232,8 +230,10 @@ func buildTable(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 }
 
 // fetchTable loads the table of an entry's league with the clubs' logos,
-// the entry's team set in bold.
-func fetchTable(ctx context.Context, c *bfv.Client, t entry) (bfv.Table, render.TableOptions, error) {
+// the entry's team set in bold. A logo BFV lacks or keeps private is taken
+// from FuPa if the entry has a FuPa team; a logo neither has leaves its
+// cell empty.
+func fetchTable(ctx context.Context, c *bfv.Client, fc *fupa.Client, t entry) (bfv.Table, render.TableOptions, error) {
 	compoundID, _, highlight, err := league(ctx, c, t)
 	if err != nil {
 		return bfv.Table{}, render.TableOptions{}, err
@@ -242,27 +242,66 @@ func fetchTable(ctx context.Context, c *bfv.Client, t entry) (bfv.Table, render.
 	if err != nil {
 		return bfv.Table{}, render.TableOptions{}, err
 	}
-	// A missing logo only leaves its cell empty.
 	logos := map[string][]byte{}
+	var missing []bfv.Standing
 	for _, r := range tbl.Rows {
-		if r.ClubID == "" {
-			continue
+		if r.ClubID != "" {
+			if b, err := c.ClubLogo(ctx, r.ClubID); err == nil {
+				logos[r.TeamID] = b
+				continue
+			}
 		}
-		if b, err := c.ClubLogo(ctx, r.ClubID); err == nil {
-			logos[r.ClubID] = b
+		missing = append(missing, r)
+	}
+	if len(missing) > 0 && t.FuPa != "" {
+		fupaLogos(ctx, fc, t.FuPa, missing, logos)
+	}
+	for _, r := range missing {
+		if logos[r.TeamID] == nil {
+			warnf("%s: no logo for %s on BFV or FuPa", tbl.League, r.Team)
 		}
 	}
 	return tbl, render.TableOptions{Logos: logos, Highlight: highlight}, nil
 }
 
-// buildTableScorers builds the table with the league's top scorers from
-// FuPa below it, as the table pages show them.
+// fupaLogos adds the FuPa logos of the given rows of a BFV table to logos,
+// keyed by BFV team ID. A FuPa row is taken for a BFV row only if both
+// agree on rank, matches and points, so a table one source has not
+// updated yet does not mix up the logos.
+func fupaLogos(ctx context.Context, fc *fupa.Client, team string, rows []bfv.Standing, logos map[string][]byte) {
+	slug, err := fupa.ParseTeam(team)
+	if err != nil {
+		return
+	}
+	tm, err := fc.Team(ctx, slug)
+	if err != nil {
+		return
+	}
+	standings, err := fc.Standings(ctx, tm.Competition)
+	if err != nil {
+		return
+	}
+	for _, r := range rows {
+		for _, s := range standings {
+			if s.Rank != r.Position || s.Matches != r.Played || s.Points != r.Points || s.Logo == "" {
+				continue
+			}
+			if b, err := fc.Logo(ctx, s.Logo); err == nil {
+				logos[r.TeamID] = b
+			}
+			break
+		}
+	}
+}
+
+// buildTableScorers builds the table with the league's top scorers below
+// it, as the table pages show them.
 func buildTableScorers(ctx context.Context, c *bfv.Client, fc *fupa.Client, t entry) (output, error) {
-	tbl, opts, err := fetchTable(ctx, c, t)
+	tbl, opts, err := fetchTable(ctx, c, fc, t)
 	if err != nil {
 		return output{}, err
 	}
-	scorers, err := leagueScorerLines(ctx, fc, t)
+	scorers, err := leagueScorerLines(ctx, c, fc, t)
 	if err != nil {
 		return output{}, err
 	}
@@ -289,37 +328,6 @@ func buildSeason(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 		name:  s.Team + "-spielplan",
 		render: func(out io.Writer, fonts render.Fonts) error {
 			return render.RenderSeason(out, s, fonts)
-		},
-	}, nil
-}
-
-func buildScorers(ctx context.Context, c *bfv.Client, t entry) (output, error) {
-	teamID, err := parseTeam(t.Team)
-	if err != nil {
-		return output{}, err
-	}
-	who := "own team"
-	if t.Opponent {
-		opp, err := c.NextOpponent(ctx, teamID)
-		if err != nil {
-			return output{}, err
-		}
-		teamID, who = opp.ID, opp.Name
-	}
-	squad, err := c.FetchSquad(ctx, teamID)
-	if err != nil {
-		return output{}, fmt.Errorf("%s: %w", who, err)
-	}
-	top := t.Top
-	if top == 0 {
-		top = defaultTop
-	}
-	scorers := bfv.TopScorers(squad, top)
-	return output{
-		label: "Torjäger " + who,
-		name:  "torjaeger",
-		render: func(out io.Writer, fonts render.Fonts) error {
-			return render.RenderScorers(out, scorers, fonts)
 		},
 	}, nil
 }

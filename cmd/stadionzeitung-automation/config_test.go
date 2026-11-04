@@ -73,7 +73,6 @@ func TestLoadConfigErrors(t *testing.T) {
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [tabele]\n", `unknown pdf "tabele"`},
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [jugend-ergebnisse]\n", `unknown pdf`},
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    gast: [spielplan]\n", `not available for the opponent`},
-		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [kader]\n", `team H1: kader: needs a fupa team`},
 		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [spielplan]\n", `needs a bfv team`},
 		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [tabelle]\n", `needs a bfv team or league`},
 		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [tabelle, tabelle]\n", `listed twice`},
@@ -81,10 +80,8 @@ func TestLoadConfigErrors(t *testing.T) {
 		{"jugend: [ergebnisse]\n", `jugend: ergebnisse: needs a club`},
 		{"club: x\njugend: [resultate]\n", `unknown pdf "resultate"`},
 		{"outDir: x\n", `no PDFs configured`},
-		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [seite]\n", `team H1: seite: needs a fupa team`},
-		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
-		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [tabelle-torjaeger]\n", `needs a bfv team (the table) and a fupa team`},
-		{"teams:\n  H1:\n    bfv: " + bfvTeam + "\n    gast: [seite]\n", `seite: needs a fupa team`},
+		{"teams:\n  H1:\n    fupa: x-m1\n    pdfs: [tabelle-torjaeger]\n", `tabelle-torjaeger: needs a bfv team or league`},
+		{"teams:\n  H1:\n    name: x\n    pdfs: [kader]\n", `team H1: kader: needs a bfv team or a fupa team`},
 		{"teams:\n  - file: Tabelle-H1.pdf\n    kind: tabelle\n", `the old format`},
 	} {
 		_, err := loadConfig(writeConfig(t, tc.yaml))
@@ -221,17 +218,27 @@ func TestValidateYouth(t *testing.T) {
 	}
 }
 
-func TestValidateFuPa(t *testing.T) {
-	for _, kind := range fupaKinds {
+func TestValidateEitherSource(t *testing.T) {
+	const teamID = "016PE85GAS000000VV0AG811VTE5EA5R"
+	for _, kind := range eitherKinds {
 		if err := (entry{Kind: kind, FuPa: "fc-sturm-hauzenberg-m1"}).validate(); err != nil {
-			t.Errorf("%s with fupa: %v", kind, err)
+			t.Errorf("%s with fupa only: %v", kind, err)
 		}
-		if err := (entry{Kind: kind, Team: "016PE85GAS000000VV0AG811VTE5EA5R"}).validate(); err == nil {
-			t.Errorf("%s without fupa: expected an error", kind)
+		if err := (entry{Kind: kind, Team: teamID, Opponent: true}).validate(); err != nil {
+			t.Errorf("%s with bfv only: %v", kind, err)
+		}
+		if err := (entry{Kind: kind}).validate(); err == nil {
+			t.Errorf("%s without team: expected an error", kind)
 		}
 	}
-	// FuPa can stand in for the BFV team.
-	if err := (entry{Kind: kindScorers, FuPa: "fc-sturm-hauzenberg-m1", Opponent: true}).validate(); err != nil {
-		t.Errorf("torjaeger with fupa only: %v", err)
+	if err := (entry{Kind: kindLeagueTop, League: "0307PL23RO000007VS5489BUVT69HBT7-G"}).validate(); err != nil {
+		t.Errorf("liga-torjaeger with league: %v", err)
+	}
+	// The table needs BFV; its scorers come from either.
+	if err := (entry{Kind: kindTableTop, Team: teamID}).validate(); err != nil {
+		t.Errorf("tabelle-torjaeger without fupa: %v", err)
+	}
+	if err := (entry{Kind: kindTableTop, FuPa: "fc-sturm-hauzenberg-m1"}).validate(); err == nil {
+		t.Error("tabelle-torjaeger without bfv: expected an error")
 	}
 }

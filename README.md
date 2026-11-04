@@ -52,16 +52,18 @@ inventory, including what stays manual.
 | `spieltage` | previous, current and next matchday with results | Aktuelle Spieltage (15, 31) | BFV |
 | `tabelle` | league table with club logos, goals and promotion/relegation zones in colour | Tabelle (13, 29, 37) | BFV |
 | `spielplan` | a team's season fixtures: matchday, date, kickoff, result, byes included | Saisonspielplan (17, 33, 35) | BFV |
-| `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)" | Kader (11, 27), guest (5) | BFV or FuPa |
+| `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)" | Kader (11, 27), guest (5) | FuPa, else BFV |
 | `jugend-ergebnisse` | results of all the club's youth teams over the last days, as a whole page | Jugend (21) | BFV |
 | `jugend-vorschau` | the youth teams' upcoming matches, as a whole page | Jugend (23) | BFV |
-| `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa |
-| `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa |
-| `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV and FuPa |
-| `seite` | a team's whole page in one PDF: its name, team photo, staff, squad and top scorers, for the club's teams and the guest | Kader (11, 27), Gastmannschaft (5) | FuPa |
+| `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa, else BFV (players only) |
+| `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa, else BFV |
+| `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV, scorers from FuPa, else BFV |
+| `seite` | a team's whole page in one PDF: its name, team photo, staff, squad and top scorers, for the club's teams and the guest | Kader (11, 27), Gastmannschaft (5) | FuPa, else BFV |
 | `schiedsrichter` | the referee and assistant referees of the next league match, with the referee's club from FuPa | Grußwort (3), guest (5) | BFV, FuPa for the club |
 
-The FuPa kinds need FuPa's written permission, see [FuPa](#fupa).
+Data both sources have is read from one and, where it lacks it, from the
+other, see [Two sources](#two-sources). Anything read from FuPa needs
+FuPa's written permission, see [FuPa](#fupa).
 
 ## Setup
 
@@ -210,18 +212,18 @@ pause
   | `tabelle` | `Tabelle-<Team>.pdf` | `bfv` |
   | `spielplan` | `Saisonspielplan-<Team>.pdf` | `bfv` |
   | `torjaeger` | `Torjaeger-<Team>.pdf` | `bfv` or `fupa` |
-  | `kader` | `Kader-<Team>.pdf` | `fupa` |
-  | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `fupa` |
-  | `tabelle-torjaeger` | `Tabelle-Torjaeger-<Team>.pdf` | `bfv` and `fupa` |
-  | `seite` | `Seite-<Team>.pdf` | `fupa` |
+  | `kader` | `Kader-<Team>.pdf` | `bfv` or `fupa` |
+  | `liga-torjaeger` | `Liga-Torjaeger-<Team>.pdf` | `bfv` or `fupa` |
+  | `tabelle-torjaeger` | `Tabelle-Torjaeger-<Team>.pdf` | `bfv` |
+  | `seite` | `Seite-<Team>.pdf` | `bfv` or `fupa` |
   | `schiedsrichter` | `Schiedsrichter-<Team>.pdf` | `bfv` or `fupa` |
 
   The matchdays are named `Spielplan-…`, the name the Stadionzeitung's
   layout has always linked them by; the season schedule is
   `Saisonspielplan-…`.
 - `gast`: PDFs for the team's next league opponent (the first league match
-  today or later); generated before a home game, that is the guest. All
-  need `fupa` except `torjaeger`:
+  today or later); generated before a home game, that is the guest. Each
+  needs `bfv` or `fupa`; the opponent is looked up on both:
 
   | PDF | File | Content |
   | --- | --- | --- |
@@ -245,11 +247,30 @@ Notes:
 - The current matchday is the one running today (through its last
   scheduled day) or, between matchdays, the next one.
 - In the table, the team's own row is set in bold.
-- `torjaeger` reads FuPa when the team has `fupa`, else BFV. BFV only has
-  scorers for clubs that publish their squad on bfv.de; many don't.
+- BFV only has squads and scorers of clubs that publish their squad on
+  bfv.de; many don't.
 - `jugend` finds the club's teams through the links on its bfv.de page; a
   team not linked there is missed.
 - Team names are spelt as BFV has them, e.g. "(SG) Haag 1/Hauzenberg 3".
+
+## Two sources
+
+BFV and FuPa overlap. For each part of a PDF the tool asks one source and,
+if that one does not have it (no team configured there, not published,
+request failed), the other. Only when neither has it is it reported
+missing, as a warning or, for the PDF's main content, an error.
+
+| Data | First | Then |
+| --- | --- | --- |
+| next league opponent (`gast`) | FuPa | BFV |
+| squad (`kader`, `seite`) | FuPa: positions, numbers, captain, staff | BFV: players only |
+| team's top scorers | FuPa | BFV |
+| team photo (`seite`) | FuPa, 1920×1080 with credit | BFV, 1024 px wide; else FuPa's placeholder |
+| league's top scorers | FuPa | BFV |
+| club logos in tables | BFV | FuPa, for rows on which both tables agree |
+| referee | BFV, with assistants | FuPa, with the referee's club |
+
+Matchdays, tables, season schedules and youth matches come from BFV only.
 
 ## FuPa
 
@@ -263,9 +284,8 @@ there.
 > downloading or reusing its data without FuPa's prior written consent.
 > Only add `fupa` to a team once you have it. The tool contacts FuPa only
 > for teams with `fupa` and identifies itself in its requests. Without
-> `fupa`, leave `kader`, `liga-torjaeger`, `tabelle-torjaeger` and `seite`
-> out of the team's `pdfs` (use `tabelle` instead), and `seite` and
-> `kader` out of its `gast`; `schiedsrichter` then comes from BFV alone.
+> `fupa`, every PDF comes from BFV alone: `kader` and `seite` then list
+> the players without positions, numbers or staff.
 
 `fupa` is the team's FuPa page, e.g.
 `https://www.fupa.net/team/fc-sturm-hauzenberg-m1`, or just
@@ -285,8 +305,7 @@ with the suffix; update it each summer.
 - `seite` puts the team's name as headline above its team photo from
   FuPa, at 1920×1080 pixels (about 300 dpi across the page) with the
   photographer's credit, then its staff (`roles`), squad by position and
-  top scorers. Without a photo the page has none. For the guest, see
-  `gast` above.
+  top scorers. For the guest, see `gast` above.
 - `liga-torjaeger` (and the scorers in `tabelle-torjaeger`) lists the top
   scorers of the team's league, e.g.
   "Almir Mesanovic (SV Türk Gücü Straubing, 16 Tore)".

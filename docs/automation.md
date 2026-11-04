@@ -19,8 +19,16 @@ Data sources used:
   lacks, are decoded from a match page: the font names each glyph after
   the character it draws.
 - **FuPa API** (`api.fupa.net/v1`): fills what BFV lacks. FuPa's terms of
-  use require its **written permission** to reuse the data; the FuPa kinds
-  are only for use once that is granted.
+  use require its **written permission** to reuse the data; the tool only
+  contacts FuPa for teams with `fupa`, set once that is granted.
+
+Where both have the same data, each part is read from one source and,
+where it lacks it, from the other; only what neither has is reported
+missing (see the README's "Two sources"). BFV additionally serves team
+photos (`service.media.fussball.de/api/uimg/cont/-/ID/{team}/TYP/50/SZ/0`,
+redirecting to a placeholder PNG when there is none) and league top
+scorers (widget `/competition/{id}/topscorer`); FuPa serves club logos
+with its table (`/standings?competition={slug}`).
 
 ## Automated
 
@@ -45,7 +53,7 @@ Limits:
 
 - **Squads can be private on BFV.** `torjaeger` from BFV needs the club to
   publish its squad on bfv.de; in the Landesliga 8 of 18 clubs don't (e.g.
-  SV Türk Gücü Straubing). With a `fupa` team it reads FuPa instead.
+  SV Türk Gücü Straubing). With a `fupa` team it reads FuPa first.
 - **Referees:** BFV lists the referee and assistants, but not the
   referee's club; that comes from FuPa if the team has it. FuPa alone
   lists the referee only. Either knows the officials only once they are
