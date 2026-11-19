@@ -20,6 +20,9 @@ fonts:
 # Jugend-Ergebnisse.pdf and Jugend-Vorschau.pdf.
 club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
 jugend: [ergebnisse, vorschau]
+# The preview lists only the youth matches after this team's next league
+# match, the one the issue is handed out at.
+previewAfter: H1
 
 # FuPa referee groups (slug from https://www.fupa.net/referee-group/<slug>)
 # in which the assistant referees' clubs are looked up, besides the
@@ -68,4 +71,4 @@ teams:
     # "2026-27" each summer.
     fupa: https://www.fupa.net/team/sg-haag-hauzenberg-m1-2026-27
     name: SG Haag I / Hauzenberg III
-    pdfs: [spieltage, tabelle, spielplan, seite]
+    pdfs: [spieltage, tabelle-torjaeger, spielplan, seite]
