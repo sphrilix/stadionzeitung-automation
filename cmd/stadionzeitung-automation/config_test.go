@@ -242,3 +242,27 @@ func TestValidateEitherSource(t *testing.T) {
 		t.Error("tabelle-torjaeger without bfv: expected an error")
 	}
 }
+
+func TestLoadConfigPreviewAfter(t *testing.T) {
+	const h1 = "https://www.bfv.de/mannschaften/fc-sturm-hauzenberg/016PE85GAS000000VV0AG811VTE5EA5R"
+	base := `club: https://www.bfv.de/vereine/fc-sturm-hauzenberg/00ES8GNI7C00000KVV0AG08LVUPGND5I
+jugend: [ergebnisse, vorschau]
+teams:
+  H1:
+    bfv: ` + h1 + `
+    pdfs: [spieltage]
+`
+	c, err := loadConfig(writeConfig(t, base+"previewAfter: H1\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Only the preview starts after the team's match.
+	for _, e := range c.entries {
+		if want := map[string]string{kindYouthNext: h1}[e.Kind]; e.After != want {
+			t.Errorf("%s: After = %q, want %q", e.File, e.After, want)
+		}
+	}
+	if _, err := loadConfig(writeConfig(t, base+"previewAfter: H9\n")); err == nil || !strings.Contains(err.Error(), "H9") {
+		t.Errorf("unknown previewAfter team: err = %v", err)
+	}
+}

@@ -35,6 +35,10 @@ type config struct {
 	// list matches; 0 means defaultDays, plus more weeks up to maxYouthDays
 	// while they fit the page.
 	Days int `json:"days"`
+	// PreviewAfter names a team, e.g. "H1", whose next league match the
+	// youth preview starts after: the issue is handed out at that match,
+	// so youth matches before it are over by the time it is read.
+	PreviewAfter string `json:"previewAfter"`
 	// RefereeGroups are FuPa referee groups ("Schiedsrichtergruppen", e.g.
 	// "passau") whose members the officials' clubs are looked up among,
 	// besides the referee's own group.
@@ -95,6 +99,10 @@ type entry struct {
 	// Days is how far back (results) or ahead (preview) club matches are
 	// listed; 0 means defaultDays.
 	Days int
+	// After is a bfv.de team URL or team id; a preview of club matches
+	// lists only those kicking off after that team's next league match,
+	// over the days from its date.
+	After string
 	// Roles limits a kader's staff to these roles; empty means all.
 	// coachesOnly keeps only the coaches instead, as for a guest.
 	Roles       []string
@@ -278,12 +286,26 @@ func (c *config) expand() error {
 			}
 		}
 	}
+	var after string
+	if c.PreviewAfter != "" {
+		tc, ok := c.Teams[c.PreviewAfter]
+		switch {
+		case !ok:
+			return fmt.Errorf("previewAfter: no team %q in teams", c.PreviewAfter)
+		case tc.BFV == "":
+			return fmt.Errorf("previewAfter: team %s has no bfv page", c.PreviewAfter)
+		}
+		after = tc.BFV
+	}
 	for _, j := range c.Jugend {
 		kind, ok := youthKinds[j]
 		if !ok {
 			return fmt.Errorf("jugend: unknown pdf %q (want ergebnisse or vorschau)", j)
 		}
 		e := entry{File: filePrefix[kind] + ".pdf", Kind: kind, Club: c.Club, Days: c.Days}
+		if kind == kindYouthNext {
+			e.After = after
+		}
 		if err := e.validate(); err != nil {
 			return fmt.Errorf("jugend: %s: %w", j, err)
 		}

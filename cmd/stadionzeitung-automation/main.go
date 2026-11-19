@@ -341,9 +341,12 @@ func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	// fillYouthPage keeps as many weeks as fit the page.
 	results := t.Kind == kindYouthDone
 	days := cmp.Or(t.Days, maxYouthDays)
-	// Results: the last days up to now; preview: from now through the
-	// coming days.
+	// Results: the last days up to now; preview: from now, or the given
+	// team's next match, through the coming days.
 	now := time.Now()
+	if !results && t.After != "" {
+		now = previewStart(ctx, c, t.After, now)
+	}
 	y, m, d := now.Date()
 	today := time.Date(y, m, d, 0, 0, 0, 0, now.Location())
 	from, to := youthWindow(today, now, days, results)
@@ -357,7 +360,8 @@ func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	}
 	var youth []bfv.ClubMatch
 	for _, m := range all {
-		if m.IsYouth() {
+		// A preview after a team's match leaves out those kicking off with it.
+		if m.IsYouth() && (results || t.After == "" || m.Kickoff.After(now)) {
 			youth = append(youth, m)
 		}
 	}
@@ -373,13 +377,39 @@ func buildYouth(ctx context.Context, c *bfv.Client, t entry) (output, error) {
 	}, nil
 }
 
+// previewStart is when a youth preview after a team's next league match
+// starts: that match's kickoff, or now if it has kicked off already. Without
+// a next match the preview starts now.
+func previewStart(ctx context.Context, c *bfv.Client, team string, now time.Time) time.Time {
+	id, err := parseTeam(team)
+	if err != nil {
+		warnf("previewAfter: %v; the youth preview starts now", err)
+		return now
+	}
+	m, err := c.NextLeagueMatch(ctx, id)
+	if err != nil {
+		warnf("previewAfter: %v; the youth preview starts now", err)
+		return now
+	}
+	if m.Kickoff.Before(now) {
+		return now
+	}
+	return m.Kickoff
+}
+
 // youthWindow is the time span of a youth page covering days: for results
 // the last days up to now, for a preview from now through the coming days.
+// A preview does not end between a Saturday and its Sunday, so a weekend's
+// matches stay together.
 func youthWindow(today, now time.Time, days int, results bool) (from, to time.Time) {
 	if results {
 		return today.AddDate(0, 0, -days), now
 	}
-	return now, today.AddDate(0, 0, days+1)
+	to = today.AddDate(0, 0, days+1)
+	if to.Weekday() == time.Sunday {
+		to = to.AddDate(0, 0, 1)
+	}
+	return now, to
 }
 
 // fillYouthPage keeps the matches of the first defaultDays and adds a week
