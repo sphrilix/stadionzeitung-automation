@@ -110,6 +110,8 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 		return Window{}, err
 	}
 
+	// matchdays caches the matchday of matches looked up on their page.
+	matchdays := map[string]int{}
 	days := make([]Matchday, len(numbers))
 	for i, n := range numbers {
 		days[i] = Matchday{Number: n}
@@ -120,7 +122,7 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 				missing = append(missing, id)
 				continue
 			}
-			if m.IsBye() {
+			if m.IsBye() || !c.ofMatchday(ctx, pages[i], n, m, matchdays) {
 				continue
 			}
 			days[i].Matches = append(days[i].Matches, m)
@@ -133,6 +135,28 @@ func (c *Client) FetchWindow(ctx context.Context, compoundID string, current int
 		})
 	}
 	return Window{League: first.LeagueName, Current: current, Days: days}, nil
+}
+
+// ofMatchday reports whether m, listed on page p, belongs to matchday n.
+// The page also lists matches moved there from another matchday, and its
+// own matches moved to another date; a match moved or kicking off outside
+// the matchday's days is looked up on its own page, which names its
+// matchday. If that fails, the match counts as the matchday's if it kicks
+// off on one of its days.
+func (c *Client) ofMatchday(ctx context.Context, p PageInfo, n int, m Match, cache map[string]int) bool {
+	inPeriod := m.Kickoff.IsZero() || p.InPeriod(n, m.Kickoff)
+	if inPeriod && !p.Rescheduled[m.ID] {
+		return true
+	}
+	day, ok := cache[m.ID]
+	if !ok {
+		var err error
+		if day, err = c.MatchMatchday(ctx, m.ID); err != nil {
+			return inPeriod
+		}
+		cache[m.ID] = day
+	}
+	return day == n
 }
 
 // leagueMatches collects every match of a competition, byes included, keyed

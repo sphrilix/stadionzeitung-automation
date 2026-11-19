@@ -25,6 +25,9 @@ func TestParsePage(t *testing.T) {
 	if len(p.Ends) != 30 || !p.Ends[1].Equal(time.Date(2026, 7, 19, 0, 0, 0, 0, berlin)) {
 		t.Errorf("Ends has %d entries, matchday 1 ends %v; want 30, 19.07.2026", len(p.Ends), p.Ends[1])
 	}
+	if len(p.Starts) != 30 || !p.Starts[1].Equal(time.Date(2026, 7, 17, 0, 0, 0, 0, berlin)) {
+		t.Errorf("Starts has %d entries, matchday 1 starts %v; want 30, 17.07.2026", len(p.Starts), p.Starts[1])
+	}
 	want := []string{
 		"0317T41PHS000000VS5489BUVSBBVPEU",
 		"0317T41PIO000000VS5489BUVSBBVPEU",
@@ -36,6 +39,29 @@ func TestParsePage(t *testing.T) {
 	}
 	if !slices.Equal(p.MatchIDs, want) {
 		t.Errorf("MatchIDs = %v, want %v", p.MatchIDs, want)
+	}
+}
+
+func TestPeriodStart(t *testing.T) {
+	end := time.Date(2027, 1, 2, 0, 0, 0, 0, berlin)
+	if got := periodStart([]byte(`\"30.12.\",\"02.01.2027\"`), end); !got.Equal(time.Date(2026, 12, 30, 0, 0, 0, 0, berlin)) {
+		t.Errorf("period over New Year starts %v, want 30.12.2026", got)
+	}
+}
+
+func TestInPeriod(t *testing.T) {
+	day := func(d, h int) time.Time { return time.Date(2026, 10, d, h, 0, 0, 0, berlin) }
+	p := PageInfo{Starts: map[int]time.Time{1: day(9, 0)}, Ends: map[int]time.Time{1: day(11, 0)}}
+	for _, tc := range []struct {
+		t    time.Time
+		want bool
+	}{{day(8, 19), false}, {day(9, 19), true}, {day(11, 23), true}, {day(12, 0), false}} {
+		if got := p.InPeriod(1, tc.t); got != tc.want {
+			t.Errorf("InPeriod(%v) = %v, want %v", tc.t, got, tc.want)
+		}
+	}
+	if !p.InPeriod(2, day(1, 0)) {
+		t.Error("a matchday without schedule should hold every time")
 	}
 }
 
