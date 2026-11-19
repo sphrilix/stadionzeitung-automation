@@ -14,6 +14,7 @@ const testCID = "03135AVGGC000009VS5489BTVU7GTVLE-G"
 
 // pageHTML mimics the escaped flight data of a bfv.de matchday page.
 // Matchday n is scheduled for the weekend ending on 11.10.2026 + 7(n-1) days.
+// An id ending in "~" is a match moved from its original date.
 func pageHTML(matchday, maxMatchday int, ids ...string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, `<title>Test Liga | Saison 26/27 | BFV</title><script>self.__next_f.push([1,"\"matchDay\":\"%d\",\"matchDays\":[`, matchday)
@@ -23,7 +24,11 @@ func pageHTML(matchday, maxMatchday int, ids ...string) string {
 	}
 	b.WriteString(`],\"matches\":[`)
 	for _, id := range ids {
-		fmt.Fprintf(&b, `{\"id\":\"%s\",\"status\":\"acknowledged\"},`, id)
+		moved := `\"$undefined\"`
+		if strings.HasSuffix(id, "~") {
+			id, moved = strings.TrimSuffix(id, "~"), `\"$D2026-10-10T13:00:00.000Z\"`
+		}
+		fmt.Fprintf(&b, `{\"id\":\"%s\",\"status\":\"acknowledged\",\"kickoff\":{\"time\":\"x\"},\"rescheduled\":%s},`, id, moved)
 	}
 	b.WriteString(`]"])</script>`)
 	return b.String()
@@ -33,7 +38,12 @@ func id(s string) string { return s + strings.Repeat("0", 32-len(s)) }
 
 func newTestServer(t *testing.T) *Client {
 	t.Helper()
-	routes := map[string]string{
+	return serve(t, testRoutes())
+}
+
+// testRoutes are the pages and widget data of a league of three teams.
+func testRoutes() map[string]string {
+	return map[string]string{
 		// BFV's default page shows the last matchday played.
 		"/ergebnisse/wettbewerb/-/" + testCID:                 pageHTML(1, 3, id("M1"), id("M2")),
 		"/ergebnisse/wettbewerb/-/" + testCID + "/spieltag/1": pageHTML(1, 3, id("M1"), id("M2")),
@@ -58,7 +68,6 @@ func newTestServer(t *testing.T) *Client {
 			{"matchId":%q,"compoundId":%q,"kickoffDate":"18.10.2026","kickoffTime":"15:00","homeTeamName":"Charlie","guestTeamName":"Alpha","result":""}]}}`,
 			id("M2"), testCID, id("M3"), testCID),
 	}
-	return serve(t, routes)
 }
 
 // serve returns a Client whose endpoints answer with the body routed by path.
@@ -110,6 +119,47 @@ func TestFetchWindow(t *testing.T) {
 	}
 	if m := w.Days[0].Matches[0]; !m.HasTime || m.Kickoff.Format("02.01.2006 15:04 MST") != "10.10.2026 19:00 CEST" {
 		t.Errorf("kickoff = %v (HasTime %v)", m.Kickoff, m.HasTime)
+	}
+}
+
+func TestFetchWindowKeepsOnlyTheMatchdaysMatches(t *testing.T) {
+	routes := testRoutes()
+	// MV of matchday 1 was moved into matchday 2's weekend; both pages list
+	// it. MF, of matchday 2 on a Thursday, is listed on both pages without
+	// a mark. MZ, moved from matchday 3 to the Wednesday before, has no match page,
+	// so it is left out: it kicks off on neither matchday's days.
+	page := "/ergebnisse/wettbewerb/-/" + testCID
+	routes[page] = pageHTML(1, 3, id("M1"), id("M2"), id("MV")+"~", id("MF"))
+	routes[page+"/spieltag/1"] = routes[page]
+	routes[page+"/spieltag/2"] = pageHTML(2, 3, id("M3"), id("BYE"), id("MV")+"~", id("MF"), id("MZ")+"~")
+	routes[page+"/spieltag/3"] = pageHTML(3, 3, id("M4"), id("MZ")+"~")
+	routes["/ergebnisse/spiel/-/"+id("MV")] = `<script>self.__next_f.push([1,"{\"matchday\":1,\"roundName\":\"x\"}"])</script>`
+	routes["/ergebnisse/spiel/-/"+id("MF")] = `<script>self.__next_f.push([1,"{\"matchday\":2,\"roundName\":\"x\"}"])</script>`
+	routes["/widget/team/C/matches"] = fmt.Sprintf(`{"state":0,"data":{"matches":[
+		{"matchId":%q,"compoundId":%q,"kickoffDate":"10.10.2026","kickoffTime":"19:00","homeTeamName":"Charlie","guestTeamName":"Delta","result":"2:1"},
+		{"matchId":%q,"compoundId":%q,"kickoffDate":"18.10.2026","kickoffTime":"15:00","homeTeamName":"Charlie","guestTeamName":"Alpha","result":""},
+		{"matchId":%q,"compoundId":%q,"kickoffDate":"17.10.2026","kickoffTime":"15:00","homeTeamName":"Charlie","guestTeamName":"Bravo","result":""},
+		{"matchId":%q,"compoundId":%q,"kickoffDate":"15.10.2026","kickoffTime":"19:00","homeTeamName":"Delta","guestTeamName":"Charlie","result":""},
+		{"matchId":%q,"compoundId":%q,"kickoffDate":"21.10.2026","kickoffTime":"19:00","homeTeamName":"Bravo","guestTeamName":"Charlie","result":""}]}}`,
+		id("M2"), testCID, id("M3"), testCID, id("MV"), testCID, id("MF"), testCID, id("MZ"), testCID)
+	c := serve(t, routes)
+	w, err := c.FetchWindow(context.Background(), testCID, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"Charlie-Delta, Alpha-Bravo, Charlie-Bravo",
+		"Delta-Charlie, Charlie-Alpha",
+		"Bravo-Alpha",
+	}
+	for i, d := range w.Days {
+		var got []string
+		for _, m := range d.Matches {
+			got = append(got, m.Home+"-"+m.Guest)
+		}
+		if g := strings.Join(got, ", "); g != want[i] {
+			t.Errorf("matchday %d = %s, want %s", d.Number, g, want[i])
+		}
 	}
 }
 

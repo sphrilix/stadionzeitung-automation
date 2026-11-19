@@ -49,12 +49,12 @@ inventory, including what stays manual.
 
 | PDF | Content | Programme page | Source |
 | --- | --- | --- | --- |
-| `spieltage` | previous, current and next matchday with results | Aktuelle Spieltage (15, 31) | BFV |
+| `spieltage` | previous, current and next matchday with results; a moved match is listed under its own matchday | Aktuelle Spieltage (15, 31) | BFV |
 | `tabelle` | league table with club logos, goals and promotion/relegation zones in colour | Tabelle (13, 29, 37) | BFV |
 | `spielplan` | a team's season fixtures: matchday, date, kickoff, result, byes included | Saisonspielplan (17, 33, 35) | BFV |
 | `torjaeger` | a team's top scorers, e.g. "J. Wagner (10 Tore)" | Kader (11, 27), guest (5) | FuPa, else BFV |
 | `jugend-ergebnisse` | results of all the club's youth teams over the last days, as a whole page | Jugend (21) | BFV |
-| `jugend-vorschau` | the youth teams' upcoming matches, as a whole page | Jugend (23) | BFV |
+| `jugend-vorschau` | the youth teams' upcoming matches (optionally only those after the first team's match), as a whole page | Jugend (23) | BFV |
 | `kader` | squad by position with captain, coaches and staff | Kader (11, 27), guest (5) | FuPa, else BFV (players only) |
 | `liga-torjaeger` | the league's top scorers with their teams | Tabelle (13, 29) | FuPa, else BFV |
 | `tabelle-torjaeger` | the table with the league's top scorers below, in one PDF | Tabelle (13, 29) | BFV, scorers from FuPa, else BFV |
@@ -244,6 +244,10 @@ pause
   last (or next) 7 days, and on a quiet week another week at a time, up
   to 4 weeks, as long as the matches still fit the page at normal size:
   more results instead of wider gaps. Setting `days` fixes the span.
+- `previewAfter`: a team from `teams`, e.g. `H1`. The `vorschau` then
+  lists only the youth matches kicking off after that team's next league
+  match, the one the issue is handed out at, and counts `days` from its
+  date. Without it the preview starts at the time the tool runs.
 - `teams`: one block per team. Its name (e.g. `H1`) becomes part of the file
   names, so use letters, digits, `-` and `_`.
 
